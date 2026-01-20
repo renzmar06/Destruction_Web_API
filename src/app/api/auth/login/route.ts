@@ -61,11 +61,12 @@ export async function POST(request: NextRequest) {
       id: user._id.toString(),
       name: user.name,
       email: user.email,
+      role: user.role
     };
 
     // Generate JWT token
     const token = jwt.sign(
-      { userId: user._id.toString(), email: user.email },
+      { userId: user._id.toString(), email: user.email, role: user.role },
       process.env.JWT_SECRET || 'your-secret-key-here'
     );
 
