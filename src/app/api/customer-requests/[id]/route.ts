@@ -1,93 +1,64 @@
 import { NextRequest, NextResponse } from 'next/server';
+import ServiceRequest from '@/models/ServiceRequest';
 import { connectDB } from '@/lib/mongodb';
-import { ObjectId } from 'mongodb';
 
-// GET - Get single customer request
-export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
-  try {
-    const db = await connectDB();
-    const requests = db.collection('customer_requests');
-    
-    const customerRequest = await requests.findOne({ _id: new ObjectId(params.id) });
-    
-    if (!customerRequest) {
-      return NextResponse.json(
-        { success: false, message: 'Request not found' },
-        { status: 404 }
-      );
-    }
-    
-    return NextResponse.json({
-      success: true,
-      data: customerRequest
-    });
-  } catch (error) {
-    return NextResponse.json(
-      { success: false, message: 'Failed to fetch request' },
-      { status: 500 }
-    );
-  }
-}
-
-// PUT - Update customer request
 export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
   try {
+    await connectDB();
+    const { id } = params;
     const body = await request.json();
     
-    const db = await connectDB();
-    const requests = db.collection('customer_requests');
-    
-    const updateData = {
-      ...body,
-      updated_date: new Date().toISOString()
-    };
-    
-    const result = await requests.updateOne(
-      { _id: new ObjectId(params.id) },
-      { $set: updateData }
+    const updatedRequest = await ServiceRequest.findByIdAndUpdate(
+      id,
+      { ...body, updatedAt: new Date() },
+      { new: true }
     );
-    
-    if (result.matchedCount === 0) {
+
+    if (!updatedRequest) {
       return NextResponse.json(
         { success: false, message: 'Request not found' },
         { status: 404 }
       );
     }
-    
+
     return NextResponse.json({
       success: true,
-      message: 'Request updated successfully'
+      message: 'Request updated successfully',
+      data: updatedRequest
     });
+
   } catch (error) {
+    console.error('Error updating service request:', error);
     return NextResponse.json(
-      { success: false, message: 'Failed to update request' },
+      { success: false, message: 'Failed to update service request' },
       { status: 500 }
     );
   }
 }
 
-// DELETE - Delete customer request
 export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
   try {
-    const db = await connectDB();
-    const requests = db.collection('customer_requests');
+    await connectDB();
+    const { id } = params;
     
-    const result = await requests.deleteOne({ _id: new ObjectId(params.id) });
-    
-    if (result.deletedCount === 0) {
+    const deletedRequest = await ServiceRequest.findByIdAndDelete(id);
+
+    if (!deletedRequest) {
       return NextResponse.json(
         { success: false, message: 'Request not found' },
         { status: 404 }
       );
     }
-    
+
     return NextResponse.json({
       success: true,
       message: 'Request deleted successfully'
     });
+
   } catch (error) {
+    console.error('Error deleting service request:', error);
     return NextResponse.json(
-      { success: false, message: 'Failed to delete request' },
+      { success: false, message: 'Failed to delete service request' },
       { status: 500 }
     );
   }
