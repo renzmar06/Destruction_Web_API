@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useAuth } from '@/contexts/AuthContext';
 import { 
   ChevronLeft, 
   ChevronRight, 
@@ -15,16 +16,23 @@ import {
   Calendar,
   MessageSquare,
   Bell,
-  DollarSign
+  DollarSign,
+  LogOut
 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 export default function Sidebar() {
   const [collapsed, setCollapsed] = useState(false);
   const [customerMenuOpen, setCustomerMenuOpen] = useState(false);
   const pathname = usePathname();
+  const { user, logout } = useAuth();
+
+  if (pathname === '/login') {
+    return null;
+  }
 
   const navItems = [
-    { id: 'dashboard', label: 'Dashboard', icon: Home, href: '/' },
+    { id: 'dashboard', label: 'Dashboard', icon: Home, href: '/dashboard' },
     { id: 'requests', label: 'Service Requests', icon: ClipboardList, href: '/requests' },
     { id: 'estimates', label: 'Estimates', icon: FileText, href: '/estimates' },
     { id: 'jobs', label: 'Jobs', icon: Calendar, href: '/jobs' },
@@ -41,7 +49,7 @@ export default function Sidebar() {
     { id: 'customer-messages', label: 'Messages', icon: MessageSquare, href: '/customer-messages' }
   ];
 
-  const isActive = (href) => pathname === href;
+  const isActive = (href: string) => pathname === href;
 
   return (
     <aside
@@ -141,8 +149,28 @@ export default function Sidebar() {
         </ul>
       </nav>
 
-      {/* Settings (Bottom) */}
-      <div className="border-t border-slate-800 p-2">
+      {/* User Info & Logout */}
+      <div className="border-t border-slate-800 p-2 space-y-2">
+        {user && (
+          <div className={`px-3 py-2 text-xs text-slate-400 ${collapsed ? 'text-center' : ''}`}>
+            {!collapsed && (
+              <>
+                <p className="font-medium text-slate-300">{user.name}</p>
+                <p className="capitalize">{user.role}</p>
+              </>
+            )}
+          </div>
+        )}
+        
+        <Button
+          onClick={logout}
+          variant="ghost"
+          className={`w-full text-slate-300 hover:bg-slate-800 hover:text-white ${collapsed ? 'justify-center px-2' : 'justify-start'}`}
+        >
+          <LogOut className="w-5 h-5 flex-shrink-0" />
+          {!collapsed && <span className="ml-3 text-sm font-medium">Logout</span>}
+        </Button>
+        
         <Link
           href="/settings"
           className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all ${
