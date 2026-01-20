@@ -1,15 +1,22 @@
-import mongoose from 'mongoose';
+import { MongoClient } from 'mongodb';
 
-const uri = process.env.MONGODB_URI || 'mongodb+srv://renzmarr06_db_user:EbTynF0OhLWL1nbi@cycleiqcluster.5lgkwbk.mongodb.net/dloop';
+const uri = process.env.MONGODB_URI!;
+const client = new MongoClient(uri);
 
-export async function connectDB() {
-  if (mongoose.connection.readyState === 0) {
-    await mongoose.connect(uri);
+let clientPromise: Promise<MongoClient>;
+
+if (process.env.NODE_ENV === 'development') {
+  if (!(global as any)._mongoClientPromise) {
+    (global as any)._mongoClientPromise = client.connect();
   }
-  return mongoose.connection;
+  clientPromise = (global as any)._mongoClientPromise;
+} else {
+  clientPromise = client.connect();
 }
 
-// // const uri = process.env.MONGODB_URI || 'mongodb+srv://renzmarr06_db_user:EbTynF0OhLWL1nbi@cycleiqcluster.5lgkwbk.mongodb.net/cycleiq';
-// const uri = process.env.MONGODB_URI || 'mongodb://localhost:27017/dloop';
-// let client: MongoClient;
-// let db: Db;
+export async function connectDB() {
+  const client = await clientPromise;
+  return client.db('destructionOps');
+}
+
+export default clientPromise;
