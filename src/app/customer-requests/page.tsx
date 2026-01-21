@@ -19,7 +19,7 @@ import { createServiceRequest, fetchServiceRequests, clearError, updateServiceRe
 import { RootState, AppDispatch } from '@/redux/store';
 import { toast } from 'sonner';
 
-const statusConfig = {
+const statusConfig: Record<string, { label: string; className: string; icon: any }> = {
   draft: { label: 'Draft', className: 'bg-slate-100 text-slate-700', icon: FileText },
   pending: { label: 'Pending Review', className: 'bg-amber-100 text-amber-700', icon: Clock },
   in_review: { label: 'In Review', className: 'bg-blue-100 text-blue-700', icon: Clock },
@@ -39,7 +39,7 @@ export default function CustomerRequests() {
   const [selectedCustomerId, setSelectedCustomerId] = useState('1');
   const [serviceType, setServiceType] = useState('');
   const [mainServiceType, setMainServiceType] = useState('');
-  const [uploadedFiles, setUploadedFiles] = useState([]);
+  const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
 
   // Form state
   const [formData, setFormData] = useState({
