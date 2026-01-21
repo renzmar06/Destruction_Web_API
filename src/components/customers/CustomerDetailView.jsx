@@ -1,6 +1,4 @@
 import React, { useState } from 'react';
-import { useQuery } from "@tanstack/react-query";
-import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
@@ -42,26 +40,11 @@ export default function CustomerDetailView({
 }) {
   const [activeTab, setActiveTab] = useState('transactions');
 
-  // Fetch related data
-  const { data: invoices = [] } = useQuery({
-    queryKey: ['customerInvoices', customer.id],
-    queryFn: () => base44.entities.Invoice.filter({ customer_id: customer.id }, '-issue_date')
-  });
-
-  const { data: estimates = [] } = useQuery({
-    queryKey: ['customerEstimates', customer.id],
-    queryFn: () => base44.entities.Estimate.filter({ customer_id: customer.id }, '-estimate_date')
-  });
-
-  const { data: jobs = [] } = useQuery({
-    queryKey: ['customerJobs', customer.id],
-    queryFn: () => base44.entities.Job.filter({ customer_id: customer.id }, '-created_date')
-  });
-
-  const { data: locations = [] } = useQuery({
-    queryKey: ['customerLocations', customer.id],
-    queryFn: () => base44.entities.Location.filter({ customer_id: customer.id })
-  });
+  // Mock data for now
+  const invoices = [];
+  const estimates = [];
+  const jobs = [];
+  const locations = [];
 
   // Calculate financials
   const openBalance = invoices

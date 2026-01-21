@@ -20,7 +20,7 @@ export default function EstimateHeader({ data, onChange, customers, locations, e
   };
 
   const handleCustomerChange = (customerId) => {
-    const customer = customers.find(c => c.id === customerId);
+    const customer = customers.find(c => c._id === customerId || c.id === customerId);
     
     // Build formatted addresses
     const billingAddr = customer?.billing_street_1 ? 
@@ -33,7 +33,7 @@ export default function EstimateHeader({ data, onChange, customers, locations, e
     onChange({
       ...data,
       customer_id: customerId,
-      customer_name: customer?.legal_company_name || '',
+      customer_name: customer?.legal_company_name || customer?.display_name || '',
       customer_email: customer?.email || '',
       bill_to_address: billingAddr,
       ship_to_address: shippingAddr,
@@ -98,8 +98,8 @@ export default function EstimateHeader({ data, onChange, customers, locations, e
             </SelectTrigger>
             <SelectContent>
               {customers.filter(c => c.customer_status === 'active').map(customer => (
-                <SelectItem key={customer.id} value={customer.id}>
-                  {customer.legal_company_name}
+                <SelectItem key={customer._id || customer.id} value={customer._id || customer.id}>
+                  {customer.legal_company_name || customer.display_name}
                 </SelectItem>
               ))}
             </SelectContent>

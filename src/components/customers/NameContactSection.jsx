@@ -114,6 +114,23 @@ export default function NameContactSection({ data, onChange, errors }) {
         </div>
 
         <div className="space-y-2">
+          <Label htmlFor="password" className="text-xs font-semibold text-slate-700">
+            Password <span className="text-red-500">*</span>
+          </Label>
+          <Input
+            id="password"
+            type="password"
+            value={data.password || ''}
+            onChange={(e) => handleChange('password', e.target.value)}
+            placeholder="Enter password for customer login"
+            className={`h-10 border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 ${errors.password ? 'border-red-400' : ''}`}
+          />
+          {errors.password && <p className="text-xs text-red-500">{errors.password}</p>}
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-2">
           <Label htmlFor="phone" className="text-xs font-semibold text-slate-700">Phone number</Label>
           <Input
             id="phone"
@@ -122,9 +139,6 @@ export default function NameContactSection({ data, onChange, errors }) {
             className="h-10 border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
           />
         </div>
-      </div>
-
-      <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label htmlFor="cc_email" className="text-xs font-semibold text-slate-700">Cc</Label>
           <Input

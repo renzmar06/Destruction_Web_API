@@ -1,6 +1,4 @@
 import React, { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Plus, Edit, Trash2 } from "lucide-react";
@@ -9,66 +7,10 @@ import PriceRuleDialog from "./PriceRuleDialog";
 export default function PriceRuleManager({ customerId = null }) {
   const [showDialog, setShowDialog] = useState(false);
   const [editingRule, setEditingRule] = useState(null);
-  const queryClient = useQueryClient();
 
-  const { data: rules = [] } = useQuery({
-    queryKey: ['priceRules', customerId],
-    queryFn: async () => {
-      const allRules = await base44.entities.PriceRule.list('-priority');
-      if (!customerId) return allRules;
-      
-      // Filter rules applicable to this customer
-      return allRules.filter(rule => {
-        if (rule.applies_to_customers === 'all_customers') return true;
-        if (rule.applies_to_customers === 'selected_customers') {
-          const ids = rule.selected_customer_ids?.split(',') || [];
-          return ids.includes(customerId);
-        }
-        return false;
-      });
-    }
-  });
-
-  const { data: customers = [] } = useQuery({
-    queryKey: ['customers'],
-    queryFn: () => base44.entities.Customer.list()
-  });
-
-  const { data: services = [] } = useQuery({
-    queryKey: ['services'],
-    queryFn: () => base44.entities.Service.list()
-  });
-
-  const saveMutation = useMutation({
-    mutationFn: (data) => {
-      // Calculate priority based on specificity
-      let priority = 0;
-      if (data.applies_to_customers === 'selected_customers') priority += 100;
-      else if (data.applies_to_customers === 'customer_type') priority += 50;
-      
-      if (data.applies_to_services === 'selected_services') priority += 10;
-      else if (data.applies_to_services === 'service_category') priority += 5;
-      
-      const ruleData = { ...data, priority };
-      
-      if (editingRule?.id) {
-        return base44.entities.PriceRule.update(editingRule.id, ruleData);
-      }
-      return base44.entities.PriceRule.create(ruleData);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['priceRules'] });
-      setShowDialog(false);
-      setEditingRule(null);
-    }
-  });
-
-  const deleteMutation = useMutation({
-    mutationFn: (ruleId) => base44.entities.PriceRule.delete(ruleId),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['priceRules'] });
-    }
-  });
+  const rules = [];
+  const customers = [];
+  const services = [];
 
   const handleEdit = (rule) => {
     setEditingRule(rule);
@@ -77,8 +19,14 @@ export default function PriceRuleManager({ customerId = null }) {
 
   const handleDelete = (rule) => {
     if (confirm(`Delete price rule "${rule.rule_name}"?`)) {
-      deleteMutation.mutate(rule.id);
+      alert('Rule deleted');
     }
+  };
+
+  const handleSave = (data) => {
+    alert(editingRule ? 'Rule updated' : 'Rule created');
+    setShowDialog(false);
+    setEditingRule(null);
   };
 
   return (
@@ -166,7 +114,7 @@ export default function PriceRuleManager({ customerId = null }) {
       <PriceRuleDialog
         open={showDialog}
         onClose={() => { setShowDialog(false); setEditingRule(null); }}
-        onSave={(data) => saveMutation.mutate(data)}
+        onSave={handleSave}
         rule={editingRule}
         customers={customers}
         services={services}

@@ -2,23 +2,18 @@ import mongoose from 'mongoose';
 
 export interface User {
   id: string;
-  firstName: string;
-  lastName: string;
+  name: string;
   email: string;
-  phone: string;
-  address: string;
   password: string;
+  role: string;
   resetPasswordToken?: string;
   resetPasswordExpires?: number;
   createdAt: Date;
+  updatedAt: Date;
 }
 
 const UserSchema = new mongoose.Schema({
-  firstName: {
-    type: String,
-    required: true,
-  },
-  lastName: {
+  name: {
     type: String,
     required: true,
   },
@@ -28,17 +23,14 @@ const UserSchema = new mongoose.Schema({
     unique: true,
     lowercase: true,
   },
-  phone: {
-    type: String,
-    required: true,
-  },
-  address: {
-    type: String,
-    required: true,
-  },
   password: {
     type: String,
     required: true,
+  },
+  role: {
+    type: String,
+    enum: ['admin', 'customer'],
+    default: 'customer',
   },
   resetPasswordToken: {
     type: String,
@@ -58,12 +50,10 @@ export interface LoginRequest {
 }
 
 export interface RegisterRequest {
-  firstName: string;
-  lastName: string;
-  phone: string;
-  address: string;
+  name: string;
   email: string;
   password: string;
+  role?: string;
 }
 
 export interface LoginResponse {

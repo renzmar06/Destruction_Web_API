@@ -25,7 +25,7 @@ export default function Sidebar() {
 
   const navItems = [
     { id: 'dashboard', label: 'Dashboard', icon: Home, href: '/' },
-    { id: 'requests', label: 'Service Requests', icon: ClipboardList, href: '/requests' },
+    { id: 'requests', label: 'Service Requests', icon: ClipboardList, href: '/service-requests' },
     { id: 'estimates', label: 'Estimates', icon: FileText, href: '/estimates' },
     { id: 'jobs', label: 'Jobs', icon: Calendar, href: '/jobs' },
     { id: 'customers', label: 'Customers', icon: Users, href: '/customers' },

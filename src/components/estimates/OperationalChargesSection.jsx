@@ -4,8 +4,6 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, Trash2, Truck } from "lucide-react";
-import { base44 } from "@/api/base44Client";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
 const chargeTypeLabels = {
   transportation: 'Transportation / Haul',
@@ -20,14 +18,9 @@ const chargeTypeLabels = {
 export default function OperationalChargesSection({ estimateId, onTotalChange, isReadOnly, unsavedCharges = [], onUnsavedChargesChange }) {
   const [editingCharge, setEditingCharge] = useState(null);
   const [showForm, setShowForm] = useState(false);
-  const queryClient = useQueryClient();
 
-  const { data: savedCharges = [], isLoading } = useQuery({
-    queryKey: ['estimateCharges', estimateId],
-    queryFn: () => estimateId ? base44.entities.EstimateAdditionalCharge.filter({ estimate_id: estimateId }, 'sort_order') : [],
-    enabled: !!estimateId
-  });
-  
+  const savedCharges = [];
+  const isLoading = false;
   const charges = estimateId ? savedCharges : unsavedCharges;
 
   useEffect(() => {
@@ -35,63 +28,44 @@ export default function OperationalChargesSection({ estimateId, onTotalChange, i
     onTotalChange(total);
   }, [charges, onTotalChange]);
 
-  const createMutation = useMutation({
-    mutationFn: (data) => {
+  const createMutation = {
+    mutate: (data) => {
       if (estimateId) {
-        return base44.entities.EstimateAdditionalCharge.create({ ...data, estimate_id: estimateId });
-      }
-      return Promise.resolve(data);
-    },
-    onSuccess: (data) => {
-      if (estimateId) {
-        queryClient.invalidateQueries({ queryKey: ['estimateCharges', estimateId] });
+        alert('Create functionality not yet implemented');
       } else {
-        // Add to unsaved charges
         onUnsavedChargesChange([...unsavedCharges, { ...data, id: Date.now().toString() }]);
       }
       setShowForm(false);
       setEditingCharge(null);
-    }
-  });
-
-  const updateMutation = useMutation({
-    mutationFn: ({ id, data }) => {
-      if (estimateId) {
-        return base44.entities.EstimateAdditionalCharge.update(id, data);
-      }
-      return Promise.resolve(data);
     },
-    onSuccess: (data, variables) => {
+    isPending: false
+  };
+
+  const updateMutation = {
+    mutate: ({ id, data }) => {
       if (estimateId) {
-        queryClient.invalidateQueries({ queryKey: ['estimateCharges', estimateId] });
+        alert('Update functionality not yet implemented');
       } else {
-        // Update unsaved charge
         const updated = unsavedCharges.map(charge => 
-          charge.id === variables.id ? { ...charge, ...variables.data } : charge
+          charge.id === id ? { ...charge, ...data } : charge
         );
         onUnsavedChargesChange(updated);
       }
       setShowForm(false);
       setEditingCharge(null);
-    }
-  });
-
-  const deleteMutation = useMutation({
-    mutationFn: (id) => {
-      if (estimateId) {
-        return base44.entities.EstimateAdditionalCharge.delete(id);
-      }
-      return Promise.resolve(id);
     },
-    onSuccess: (_, id) => {
+    isPending: false
+  };
+
+  const deleteMutation = {
+    mutate: (id) => {
       if (estimateId) {
-        queryClient.invalidateQueries({ queryKey: ['estimateCharges', estimateId] });
+        alert('Delete functionality not yet implemented');
       } else {
-        // Remove from unsaved charges
         onUnsavedChargesChange(unsavedCharges.filter(charge => charge.id !== id));
       }
     }
-  });
+  };
 
   const handleSave = (chargeData) => {
     if (editingCharge?.id) {

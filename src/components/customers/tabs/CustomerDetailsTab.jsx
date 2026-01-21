@@ -1,8 +1,6 @@
 import React, { useState } from 'react';
 import { Mail, Phone, MapPin, Plus, FileText, Download, X } from 'lucide-react';
 import { Button } from "@/components/ui/button";
-import { useQuery } from "@tanstack/react-query";
-import { base44 } from "@/api/base44Client";
 import {
   Dialog,
   DialogContent,
@@ -15,29 +13,9 @@ export default function CustomerDetailsTab({ customer, locations }) {
   const [showUploadDialog, setShowUploadDialog] = useState(false);
   const [uploadingFile, setUploadingFile] = useState(false);
 
-  // Fetch customer's estimates
-  const { data: estimates = [] } = useQuery({
-    queryKey: ['customerEstimates', customer.id],
-    queryFn: () => base44.entities.Estimate.filter({ customer_id: customer.id })
-  });
-
-  // Fetch attachments for all customer estimates
-  const { data: allAttachments = [], refetch: refetchAttachments } = useQuery({
-    queryKey: ['customerAttachments', customer.id],
-    queryFn: async () => {
-      if (estimates.length === 0) return [];
-      const attachmentPromises = estimates.map(est => 
-        base44.entities.EstimateAttachment.filter({ estimate_id: est.id })
-      );
-      const results = await Promise.all(attachmentPromises);
-      return results.flat().map(att => ({
-        ...att,
-        source: 'estimate',
-        estimate: estimates.find(e => e.id === att.estimate_id)
-      }));
-    },
-    enabled: estimates.length > 0
-  });
+  // Mock data for now
+  const estimates = [];
+  const allAttachments = [];
 
   const handleFileUpload = async (event) => {
     const file = event.target.files?.[0];
@@ -45,20 +23,8 @@ export default function CustomerDetailsTab({ customer, locations }) {
 
     setUploadingFile(true);
     try {
-      const { file_url } = await base44.integrations.Core.UploadFile({ file });
-      
-      // Create attachment record for the most recent estimate, or just store it
-      if (estimates.length > 0) {
-        const latestEstimate = estimates[0];
-        await base44.entities.EstimateAttachment.create({
-          estimate_id: latestEstimate.id,
-          attachment_type: 'customer_instructions',
-          file_url,
-          file_name: file.name
-        });
-      }
-      
-      refetchAttachments();
+      // Mock file upload - just show alert for now
+      alert('File upload functionality will be implemented later');
       setShowUploadDialog(false);
     } catch (error) {
       alert('Failed to upload file: ' + error.message);

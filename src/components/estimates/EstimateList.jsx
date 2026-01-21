@@ -1,6 +1,4 @@
 import React, { useState } from 'react';
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -32,7 +30,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { toast } from "sonner";
 import { Textarea } from "@/components/ui/textarea";
 
 const statusConfig = {
@@ -43,8 +40,7 @@ const statusConfig = {
   cancelled: { label: 'Cancelled', class: 'text-gray-700', icon: null }
 };
 
-export default function EstimateList({ estimates, customers, onView, onSend, onAccept, onConvert, isLoading }) {
-  const queryClient = useQueryClient();
+export default function EstimateList({ estimates, customers, onView, onDelete, onSend, onAccept, onConvert, isLoading }) {
   const [statusFilter, setStatusFilter] = useState('all');
   const [dateFilter, setDateFilter] = useState('last_12');
   const [selectedEstimates, setSelectedEstimates] = useState([]);
@@ -65,20 +61,21 @@ export default function EstimateList({ estimates, customers, onView, onSend, onA
   const [shareDialogOpen, setShareDialogOpen] = useState(false);
   const [shareUrl, setShareUrl] = useState('');
 
-  const { data: vendors = [] } = useQuery({
-    queryKey: ['vendors'],
-    queryFn: () => base44.entities.Vendor.list(),
-  });
-
-  // Fetch line items for sidebar estimate
-  const { data: sidebarLineItems = [] } = useQuery({
-    queryKey: ['estimateLineItems', sidebarEstimate?.id],
-    queryFn: () => sidebarEstimate?.id ? base44.entities.EstimateLineItem.filter({ estimate_id: sidebarEstimate.id }, 'sort_order') : [],
-    enabled: !!sidebarEstimate?.id
-  });
+  const vendors = [];
+  const sidebarLineItems = [];
   
   // Column visibility and rows settings
   const [visibleColumns, setVisibleColumns] = useState(() => {
+    if (typeof window === 'undefined') {
+      return {
+        date: true,
+        number: true,
+        customer: true,
+        amount: true,
+        status: true,
+        expiration: false
+      };
+    }
     const saved = localStorage.getItem('estimateColumns');
     return saved ? JSON.parse(saved) : {
       date: true,
@@ -90,6 +87,7 @@ export default function EstimateList({ estimates, customers, onView, onSend, onA
     };
   });
   const [rowsPerPage, setRowsPerPage] = useState(() => {
+    if (typeof window === 'undefined') return 100;
     const saved = localStorage.getItem('estimateRowsPerPage');
     return saved ? parseInt(saved) : 100;
   });
@@ -116,8 +114,10 @@ export default function EstimateList({ estimates, customers, onView, onSend, onA
   };
 
   const saveAsDefault = () => {
-    localStorage.setItem('estimateColumns', JSON.stringify(visibleColumns));
-    localStorage.setItem('estimateRowsPerPage', rowsPerPage.toString());
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('estimateColumns', JSON.stringify(visibleColumns));
+      localStorage.setItem('estimateRowsPerPage', rowsPerPage.toString());
+    }
     alert('Settings saved as default');
   };
 
@@ -132,19 +132,29 @@ export default function EstimateList({ estimates, customers, onView, onSend, onA
   const handleSendSubmit = async () => {
     if (sendMethod === 'email' && sendEmail) {
       try {
-        const response = await base44.functions.invoke('sendEstimate', {
-          estimate_id: selectedEstimate.id,
-          delivery_method: 'email',
-          recipient: sendEmail
+        const response = await fetch('/api/estimates/send', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            estimateId: selectedEstimate._id || selectedEstimate.id,
+            email: sendEmail,
+            message: ''
+          })
         });
-        if (response.data.success) {
-          queryClient.invalidateQueries({ queryKey: ['estimates'] });
-          alert(response.data.message);
-          setSendDialogOpen(false);
+        
+        const result = await response.json();
+        
+        if (result.success) {
+          alert('Estimate sent successfully!');
+          // Refresh estimates to show updated status
+          window.location.reload();
+        } else {
+          alert('Failed to send estimate: ' + result.error);
         }
       } catch (error) {
         alert('Failed to send estimate: ' + error.message);
       }
+      setSendDialogOpen(false);
     } else if (sendMethod === 'sms' && sendPhone) {
       alert('SMS sending not yet implemented');
       setSendDialogOpen(false);
@@ -152,64 +162,19 @@ export default function EstimateList({ estimates, customers, onView, onSend, onA
   };
 
   const handleDuplicate = async (estimate) => {
-    try {
-      const response = await base44.functions.invoke('duplicateEstimate', { estimate_id: estimate.id });
-      if (response.data.success) {
-        queryClient.invalidateQueries({ queryKey: ['estimates'] });
-        alert(`Estimate duplicated as ${response.data.estimate.estimate_number}`);
-      }
-    } catch (error) {
-      alert('Failed to duplicate estimate: ' + error.message);
-    }
+    alert('Duplicate functionality not yet implemented');
   };
 
   const handleShareLink = async (estimate) => {
-    try {
-      const response = await base44.functions.invoke('generateEstimateShareLink', {
-        estimate_id: estimate.id
-      });
-      if (response.data.success) {
-        setSelectedEstimate(estimate);
-        setShareUrl(response.data.share_url);
-        setShareDialogOpen(true);
-      }
-    } catch (error) {
-      toast.error('Unable to generate share link. Please try again.');
-    }
+    alert('Share link functionality not yet implemented');
   };
 
   const handlePrint = async (estimate) => {
-    try {
-      const response = await base44.functions.invoke('exportEstimatePDF', { estimateId: estimate.id });
-      const blob = new Blob([response.data], { type: 'application/pdf' });
-      const url = window.URL.createObjectURL(blob);
-      window.open(url, '_blank');
-      window.URL.revokeObjectURL(url);
-    } catch (error) {
-      alert('Failed to print estimate: ' + error.message);
-    }
+    alert('Print functionality not yet implemented');
   };
 
   const handleUpdateStatus = async (estimate) => {
-    const newStatus = prompt(
-      `Update status for ${estimate.estimate_number}\n\nEnter new status (draft, sent, accepted, expired, cancelled):`,
-      estimate.estimate_status
-    );
-    
-    if (newStatus && newStatus !== estimate.estimate_status) {
-      try {
-        const response = await base44.functions.invoke('updateEstimateStatus', {
-          estimate_id: estimate.id,
-          new_status: newStatus
-        });
-        if (response.data.success) {
-          queryClient.invalidateQueries({ queryKey: ['estimates'] });
-          alert(response.data.message);
-        }
-      } catch (error) {
-        alert('Failed to update status: ' + error.message);
-      }
-    }
+    alert('Update status functionality not yet implemented');
   };
 
   const handleCopyToPO = (estimate) => {
@@ -222,22 +187,9 @@ export default function EstimateList({ estimates, customers, onView, onSend, onA
       alert('Please select a vendor');
       return;
     }
-
-    try {
-      const response = await base44.functions.invoke('copyEstimateToPO', {
-        estimate_id: selectedEstimate.id,
-        vendor_id: selectedVendorId
-      });
-      
-      if (response.data.success) {
-        queryClient.invalidateQueries({ queryKey: ['purchaseOrders'] });
-        alert(`Purchase Order ${response.data.po.po_number} created successfully`);
-        setPODialogOpen(false);
-        setSelectedVendorId('');
-      }
-    } catch (error) {
-      alert('Failed to create PO: ' + error.message);
-    }
+    alert('Copy to PO functionality not yet implemented');
+    setPODialogOpen(false);
+    setSelectedVendorId('');
   };
 
   const handleDelete = (estimate) => {
@@ -250,25 +202,13 @@ export default function EstimateList({ estimates, customers, onView, onSend, onA
 
     setIsDeleting(true);
     try {
-      const response = await base44.functions.invoke('deleteEstimate', { estimate_id: estimateToDelete.id });
-      if (response.data.success) {
-        queryClient.invalidateQueries({ queryKey: ['estimates'] });
-        
-        // Log activity
-        await base44.functions.invoke('logActivity', {
-          entity_type: 'estimate',
-          entity_id: estimateToDelete.id,
-          entity_reference: estimateToDelete.estimate_number,
-          action_type: 'deleted',
-          action_description: `Estimate ${estimateToDelete.estimate_number} was deleted`
-        });
-        
-        toast.success(`Estimate ${estimateToDelete.estimate_number} was deleted.`);
-        setDeleteModalOpen(false);
-        setEstimateToDelete(null);
+      if (onDelete) {
+        await onDelete(estimateToDelete._id || estimateToDelete.id);
       }
+      setDeleteModalOpen(false);
+      setEstimateToDelete(null);
     } catch (error) {
-      toast.error('Failed to delete estimate: ' + error.message);
+      alert('Failed to delete estimate: ' + error.message);
     } finally {
       setIsDeleting(false);
     }
@@ -354,7 +294,7 @@ export default function EstimateList({ estimates, customers, onView, onSend, onA
   );
 
   return (
-    <div className="space-y-4">
+    <div className="">
       {/* Batch Actions & Filters Bar */}
       <div className="flex items-center gap-4">
         <Select defaultValue="batch">
@@ -935,7 +875,7 @@ export default function EstimateList({ estimates, customers, onView, onSend, onA
             <Button 
               onClick={() => {
                 navigator.clipboard.writeText(shareUrl);
-                toast.success('Estimate link copied.');
+                alert('Estimate link copied.');
                 setShareDialogOpen(false);
               }}
               className="bg-blue-600 hover:bg-blue-700"
