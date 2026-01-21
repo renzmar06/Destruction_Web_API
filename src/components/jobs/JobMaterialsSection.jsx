@@ -1,6 +1,4 @@
 import React, { useState } from 'react';
-import { base44 } from "@/api/base44Client";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -10,36 +8,7 @@ import { Card } from "@/components/ui/card";
 
 export default function JobMaterialsSection({ jobId, isReadOnly }) {
   const [editingMaterial, setEditingMaterial] = useState(null);
-  const queryClient = useQueryClient();
-
-  const { data: materials = [] } = useQuery({
-    queryKey: ['jobMaterials', jobId],
-    queryFn: () => jobId ? base44.entities.JobMaterial.filter({ job_id: jobId }, 'sort_order') : [],
-    enabled: !!jobId
-  });
-
-  const createMutation = useMutation({
-    mutationFn: (data) => base44.entities.JobMaterial.create(data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['jobMaterials', jobId] });
-      setEditingMaterial(null);
-    }
-  });
-
-  const updateMutation = useMutation({
-    mutationFn: ({ id, data }) => base44.entities.JobMaterial.update(id, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['jobMaterials', jobId] });
-      setEditingMaterial(null);
-    }
-  });
-
-  const deleteMutation = useMutation({
-    mutationFn: (id) => base44.entities.JobMaterial.delete(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['jobMaterials', jobId] });
-    }
-  });
+  const [materials, setMaterials] = useState([]);
 
   const handleAddNew = () => {
     setEditingMaterial({
@@ -57,15 +26,16 @@ export default function JobMaterialsSection({ jobId, isReadOnly }) {
 
   const handleSave = () => {
     if (editingMaterial.id) {
-      updateMutation.mutate({ id: editingMaterial.id, data: editingMaterial });
+      setMaterials(prev => prev.map(m => m.id === editingMaterial.id ? editingMaterial : m));
     } else {
-      createMutation.mutate(editingMaterial);
+      setMaterials(prev => [...prev, { ...editingMaterial, id: Date.now() }]);
     }
+    setEditingMaterial(null);
   };
 
   const handleDelete = (id) => {
     if (confirm('Delete this material entry?')) {
-      deleteMutation.mutate(id);
+      setMaterials(prev => prev.filter(m => m.id !== id));
     }
   };
 
@@ -265,7 +235,7 @@ export default function JobMaterialsSection({ jobId, isReadOnly }) {
           <div className="flex justify-end gap-2 mt-4">
             <Button variant="outline" onClick={() => setEditingMaterial(null)}>Cancel</Button>
             <Button onClick={handleSave} disabled={!editingMaterial.material_type || !editingMaterial.packaging_type}>
-              {createMutation.isPending || updateMutation.isPending ? 'Saving...' : 'Save Material'}
+              Save Material
             </Button>
           </div>
         </Card>

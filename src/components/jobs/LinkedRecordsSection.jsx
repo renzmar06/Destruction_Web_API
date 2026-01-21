@@ -2,7 +2,6 @@ import React from 'react';
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Link2, FileText, Image, CheckCircle, ExternalLink } from "lucide-react";
-import { Link } from "react-router-dom";
 import { createPageUrl } from "../../utils";
 
 export default function LinkedRecordsSection({ job }) {
@@ -21,11 +20,9 @@ export default function LinkedRecordsSection({ job }) {
               <span className="text-sm font-medium text-slate-700">Estimate</span>
             </div>
             {job.estimate_id && (
-              <Link to={createPageUrl('Estimates')}>
-                <Button variant="ghost" size="sm" className="h-6 w-6 p-0 text-blue-600 hover:text-blue-700">
-                  <ExternalLink className="w-3 h-3" />
-                </Button>
-              </Link>
+              <Button variant="ghost" size="sm" className="h-6 w-6 p-0 text-blue-600 hover:text-blue-700">
+                <ExternalLink className="w-3 h-3" />
+              </Button>
             )}
           </div>
           <p className="text-lg font-semibold text-slate-900">
@@ -39,11 +36,9 @@ export default function LinkedRecordsSection({ job }) {
               <FileText className="w-4 h-4 text-green-600" />
               <span className="text-sm font-medium text-slate-700">Invoices</span>
             </div>
-            <Link to={createPageUrl('Invoices')}>
-              <Button variant="ghost" size="sm" className="h-6 w-6 p-0 text-green-600 hover:text-green-700">
-                <ExternalLink className="w-3 h-3" />
-              </Button>
-            </Link>
+            <Button variant="ghost" size="sm" className="h-6 w-6 p-0 text-green-600 hover:text-green-700">
+              <ExternalLink className="w-3 h-3" />
+            </Button>
           </div>
           <p className="text-sm text-slate-500">View in Invoices</p>
         </div>
@@ -54,11 +49,9 @@ export default function LinkedRecordsSection({ job }) {
               <CheckCircle className="w-4 h-4 text-purple-600" />
               <span className="text-sm font-medium text-slate-700">Affidavit</span>
             </div>
-            <Link to={createPageUrl('Affidavits')}>
-              <Button variant="ghost" size="sm" className="h-6 w-6 p-0 text-purple-600 hover:text-purple-700">
-                <ExternalLink className="w-3 h-3" />
-              </Button>
-            </Link>
+            <Button variant="ghost" size="sm" className="h-6 w-6 p-0 text-purple-600 hover:text-purple-700">
+              <ExternalLink className="w-3 h-3" />
+            </Button>
           </div>
           <p className="text-sm text-slate-500">View in Affidavits</p>
         </div>
@@ -69,11 +62,9 @@ export default function LinkedRecordsSection({ job }) {
               <Image className="w-4 h-4 text-indigo-600" />
               <span className="text-sm font-medium text-slate-700">Media</span>
             </div>
-            <Link to={createPageUrl('JobMedia')}>
-              <Button variant="ghost" size="sm" className="h-6 w-6 p-0 text-indigo-600 hover:text-indigo-700">
-                <ExternalLink className="w-3 h-3" />
-              </Button>
-            </Link>
+            <Button variant="ghost" size="sm" className="h-6 w-6 p-0 text-indigo-600 hover:text-indigo-700">
+              <ExternalLink className="w-3 h-3" />
+            </Button>
           </div>
           <p className="text-sm text-slate-500">Upload in Job Media</p>
         </div>

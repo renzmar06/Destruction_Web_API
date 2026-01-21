@@ -1,11 +1,17 @@
 import { configureStore } from '@reduxjs/toolkit';
 import authReducer from './slices/authSlice';
 import customerRequestsReducer from './slices/customerRequestsSlice';
+import estimatesReducer from './slices/estimatesSlice';
+import customersReducer from './slices/customersSlice';
+import jobsReducer from './slices/jobsSlice';
 
 export const store = configureStore({
   reducer: {
     auth: authReducer,
     customerRequests: customerRequestsReducer,
+    estimates: estimatesReducer,
+    customers: customersReducer,
+    jobs: jobsReducer,
   },
 });
 

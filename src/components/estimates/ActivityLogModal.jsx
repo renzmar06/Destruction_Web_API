@@ -1,6 +1,4 @@
 import React, { useState } from 'react';
-import { useQuery } from "@tanstack/react-query";
-import { base44 } from "@/api/base44Client";
 import {
   Dialog,
   DialogContent,
@@ -13,22 +11,9 @@ import { Activity, User, Clock, ChevronRight, ChevronDown, Eye } from "lucide-re
 export default function ActivityLogModal({ estimate, open, onClose }) {
   const [expandedViews, setExpandedViews] = useState(false);
 
-  const { data: activities = [], isLoading } = useQuery({
-    queryKey: ['activityLog', estimate?.id],
-    queryFn: () => estimate?.id ? base44.entities.ActivityLog.filter({ 
-      entity_type: 'estimate',
-      entity_id: estimate.id 
-    }, 'created_date') : [],
-    enabled: !!estimate?.id && open
-  });
-
-  const { data: views = [] } = useQuery({
-    queryKey: ['estimateViews', estimate?.id],
-    queryFn: () => estimate?.id ? base44.entities.EstimateView.filter({ 
-      estimate_id: estimate.id 
-    }, 'created_date') : [],
-    enabled: !!estimate?.id && open
-  });
+  const activities = [];
+  const views = [];
+  const isLoading = false;
 
   const actionColors = {
     created: 'text-green-600',

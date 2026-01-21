@@ -1,8 +1,6 @@
 import React, { useState } from 'react';
 import { X, ChevronDown, ChevronRight, Eye, Activity as ActivityIcon } from 'lucide-react';
 import { Button } from "@/components/ui/button";
-import { useQuery } from "@tanstack/react-query";
-import { base44 } from "@/api/base44Client";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -30,22 +28,8 @@ export default function EstimateDetailsSidebar({ estimate, lineItems, onClose, o
     setExpandedSections(prev => ({ ...prev, [section]: !prev[section] }));
   };
 
-  const { data: activities = [] } = useQuery({
-    queryKey: ['activityLog', estimate?.id],
-    queryFn: () => estimate?.id ? base44.entities.ActivityLog.filter({ 
-      entity_type: 'estimate',
-      entity_id: estimate.id 
-    }, 'created_date', 5) : [],
-    enabled: !!estimate?.id
-  });
-
-  const { data: views = [] } = useQuery({
-    queryKey: ['estimateViews', estimate?.id],
-    queryFn: () => estimate?.id ? base44.entities.EstimateView.filter({ 
-      estimate_id: estimate.id 
-    }, 'created_date') : [],
-    enabled: !!estimate?.id
-  });
+  const activities = [];
+  const views = [];
 
   const config = statusConfig[estimate?.estimate_status] || statusConfig.draft;
 

@@ -5,10 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, Trash2, Package, Filter, ExternalLink } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { base44 } from "@/api/base44Client";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Link } from "react-router-dom";
-import { createPageUrl } from "../../utils";
+import { Link } from "next/link";
 import { applyPriceRulesToService } from "./PriceRuleApplier";
 
 const pricingUnitLabels = {
@@ -45,20 +42,12 @@ export default function LineItemsSection({ estimateId, onTotalChange, isReadOnly
   const [editingItem, setEditingItem] = useState(null);
   const [showForm, setShowForm] = useState(false);
   const [categoryFilter, setCategoryFilter] = useState('all');
-  const queryClient = useQueryClient();
 
-  const { data: savedLineItems = [], isLoading } = useQuery({
-    queryKey: ['estimateLineItems', estimateId],
-    queryFn: () => estimateId ? base44.entities.EstimateLineItem.filter({ estimate_id: estimateId }, 'sort_order') : [],
-    enabled: !!estimateId
-  });
-
+  const savedLineItems = [];
+  const isLoading = false;
   const lineItems = estimateId ? savedLineItems : unsavedLineItems;
 
-  const { data: services = [] } = useQuery({
-    queryKey: ['services'],
-    queryFn: () => base44.entities.Service.filter({ service_status: 'active' })
-  });
+  const services = [];
 
   const filteredLineItems = lineItems.filter(item => {
     if (categoryFilter === 'all') return true;
@@ -71,63 +60,44 @@ export default function LineItemsSection({ estimateId, onTotalChange, isReadOnly
     onTotalChange(total);
   }, [lineItems, onTotalChange]);
 
-  const createMutation = useMutation({
-    mutationFn: (data) => {
+  const createMutation = {
+    mutate: (data) => {
       if (estimateId) {
-        return base44.entities.EstimateLineItem.create({ ...data, estimate_id: estimateId });
-      }
-      return Promise.resolve(data);
-    },
-    onSuccess: (data) => {
-      if (estimateId) {
-        queryClient.invalidateQueries({ queryKey: ['estimateLineItems', estimateId] });
+        alert('Create functionality not yet implemented');
       } else {
-        // Add to unsaved items
         onUnsavedLineItemsChange([...unsavedLineItems, { ...data, id: Date.now().toString() }]);
       }
       setShowForm(false);
       setEditingItem(null);
-    }
-  });
-
-  const updateMutation = useMutation({
-    mutationFn: ({ id, data }) => {
-      if (estimateId) {
-        return base44.entities.EstimateLineItem.update(id, data);
-      }
-      return Promise.resolve(data);
     },
-    onSuccess: (data, variables) => {
+    isPending: false
+  };
+
+  const updateMutation = {
+    mutate: ({ id, data }) => {
       if (estimateId) {
-        queryClient.invalidateQueries({ queryKey: ['estimateLineItems', estimateId] });
+        alert('Update functionality not yet implemented');
       } else {
-        // Update unsaved item
         const updated = unsavedLineItems.map(item => 
-          item.id === variables.id ? { ...item, ...variables.data } : item
+          item.id === id ? { ...item, ...data } : item
         );
         onUnsavedLineItemsChange(updated);
       }
       setShowForm(false);
       setEditingItem(null);
-    }
-  });
-
-  const deleteMutation = useMutation({
-    mutationFn: (id) => {
-      if (estimateId) {
-        return base44.entities.EstimateLineItem.delete(id);
-      }
-      return Promise.resolve(id);
     },
-    onSuccess: (_, id) => {
+    isPending: false
+  };
+
+  const deleteMutation = {
+    mutate: (id) => {
       if (estimateId) {
-        queryClient.invalidateQueries({ queryKey: ['estimateLineItems', estimateId] });
+        alert('Delete functionality not yet implemented');
       } else {
-        // Remove from unsaved items
         onUnsavedLineItemsChange(unsavedLineItems.filter(item => item.id !== id));
       }
     }
-  });
+  };
 
   const handleSave = (itemData) => {
     const lineTotal = (itemData.quantity || 0) * (itemData.unit_price || 0);
