@@ -36,9 +36,9 @@ export default function Sidebar() {
     { id: 'customer-dashboard', label: 'Dashboard', icon: Home, href: '/CustomerDashboard' },
     { id: 'customer-requests', label: 'My Requests', icon: ClipboardList, href: '/customer-requests' },
     { id: 'customer-estimates', label: 'My Estimates', icon: FileText, href: '/customer-estimates' },
-    { id: 'customer-jobs', label: 'My Jobs', icon: Calendar, href: '/customer-jobs' },
-    { id: 'customer-invoices', label: 'My Invoices', icon: DollarSign, href: '/customer-invoices' },
-    { id: 'customer-messages', label: 'Messages', icon: MessageSquare, href: '/customer-messages' }
+    // { id: 'customer-jobs', label: 'My Jobs', icon: Calendar, href: '/customer-jobs' },
+    // { id: 'customer-invoices', label: 'My Invoices', icon: DollarSign, href: '/customer-invoices' },
+    // { id: 'customer-messages', label: 'Messages', icon: MessageSquare, href: '/customer-messages' }
   ];
 
   const isActive = (href: string) => pathname === href;
