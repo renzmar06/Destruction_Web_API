@@ -8,6 +8,14 @@ export default function SchedulingSection({ data, onChange, errors, isReadOnly }
     onChange({ ...data, [field]: value });
   };
 
+  // Convert date to YYYY-MM-DD format for input
+  const formatDateForInput = (dateString) => {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return '';
+    return date.toISOString().split('T')[0];
+  };
+
   return (
     <div className="bg-white rounded-xl border border-slate-200 p-6 space-y-4">
       <div className="flex items-center gap-2 pb-3 border-b border-slate-100">
@@ -23,7 +31,7 @@ export default function SchedulingSection({ data, onChange, errors, isReadOnly }
           <Input
             id="scheduled_date"
             type="date"
-            value={data.scheduled_date || ''}
+            value={formatDateForInput(data.scheduled_date)}
             onChange={(e) => handleChange('scheduled_date', e.target.value)}
             disabled={isReadOnly}
             className={errors.scheduled_date ? 'border-red-400' : ''}
@@ -36,7 +44,7 @@ export default function SchedulingSection({ data, onChange, errors, isReadOnly }
           <Input
             id="actual_start_date"
             type="date"
-            value={data.actual_start_date || ''}
+            value={formatDateForInput(data.actual_start_date)}
             onChange={(e) => handleChange('actual_start_date', e.target.value)}
             disabled={isReadOnly}
           />
@@ -47,7 +55,7 @@ export default function SchedulingSection({ data, onChange, errors, isReadOnly }
           <Input
             id="actual_completion_date"
             type="date"
-            value={data.actual_completion_date || ''}
+            value={formatDateForInput(data.actual_completion_date)}
             onChange={(e) => handleChange('actual_completion_date', e.target.value)}
             disabled={isReadOnly}
           />

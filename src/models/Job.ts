@@ -13,7 +13,7 @@ const jobSchema = new mongoose.Schema({
   actual_completion_date: { type: Date },
   destruction_method: { 
     type: String, 
-    enum: ['mechanical_destruction', 'chemical_destruction', 'incineration', 'shredding', 'other'],
+    enum: ['mechanical_destruction', 'chemical_destruction', 'incineration', 'shredding', 'liquidization', 'other'],
     default: 'mechanical_destruction'
   },
   destruction_description: { type: String },

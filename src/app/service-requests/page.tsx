@@ -51,7 +51,7 @@ interface ServiceRequest {
   createdAt: string;
   contactName: string;
   contactPhone: string;
-  urgency: Urgency;
+  urgency?: Urgency;
   status: RequestStatus;
   admin_notes?: string;
 }
@@ -141,8 +141,8 @@ export default function ServiceRequestsPage() {
                   Request #{selectedRequest.requestNumber}
                 </h2>
                 <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${status.className}`}>{status.label}</span>
-                <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${urgencyConfig[selectedRequest.urgency].className}`}>
-                  {urgencyConfig[selectedRequest.urgency].label}
+                <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${urgencyConfig[selectedRequest.urgency || 'normal'].className}`}>
+                  {urgencyConfig[selectedRequest.urgency || 'normal'].label}
                 </span>
               </div>
 
@@ -432,9 +432,9 @@ export default function ServiceRequestsPage() {
                 const status = statusConfig[r.status as keyof typeof statusConfig] || statusConfig.pending;
                 return (
                   <div
-                    key={r._id || r.id}
+                    key={r.id || r.requestNumber}
                     className="bg-white rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow cursor-pointer p-6"
-                    onClick={() => setSelectedRequest(r)}
+                    onClick={() => setSelectedRequest(r as ServiceRequest)}
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex-1">

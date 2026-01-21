@@ -17,11 +17,11 @@ export async function POST(request: NextRequest) {
       const buffer = Buffer.from(await file.arrayBuffer());
       const filename = `${Date.now()}_${file.name.replace(/\s/g, '_')}`;
 
-      const uploadDir = "/tmp/uploads";
+      const uploadDir = path.join(process.cwd(), 'public', 'upload');
       await mkdir(uploadDir, { recursive: true });
       await writeFile(path.join(uploadDir, filename), buffer);
 
-      imageUrl = `/uploads/${filename}`;
+      imageUrl = `/upload/${filename}`;
     }
 
     return NextResponse.json({ 
