@@ -20,8 +20,8 @@ export default function JobList({ jobs, customers, onView, onGenerateInvoice, on
   const [customerFilter, setCustomerFilter] = useState('all');
 
   const getCustomerName = (customerId) => {
-    const customer = customers.find(c => c.id === customerId);
-    return customer?.legal_company_name || 'Unknown';
+    const customer = customers.find(c => c._id === customerId);
+    return customer?.legal_company_name || customer?.display_name || 'Unknown';
   };
 
   const filteredJobs = jobs.filter(job => {
@@ -66,8 +66,8 @@ export default function JobList({ jobs, customers, onView, onGenerateInvoice, on
             <SelectContent>
               <SelectItem value="all">All Customers</SelectItem>
               {customers.map(customer => (
-                <SelectItem key={customer.id} value={customer.id}>
-                  {customer.legal_company_name}
+                <SelectItem key={customer._id} value={customer._id}>
+                  {customer.legal_company_name || customer.display_name}
                 </SelectItem>
               ))}
             </SelectContent>

@@ -179,7 +179,7 @@ function EstimatesPageContent(): React.JSX.Element {
       }
       
       if (editingEstimate?.id || editingEstimate?._id) {
-        const estimateId = editingEstimate._id || editingEstimate.id;
+        const estimateId = (editingEstimate._id || editingEstimate.id) as string;
         await dispatch(updateEstimate({ id: estimateId, estimate: formData as Partial<Estimate> })).unwrap();
         showSuccessToast("Estimate updated successfully.");
         setShowForm(false);

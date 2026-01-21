@@ -22,7 +22,7 @@ import JobMaterialsSection from "@/components/jobs/JobMaterialsSection";
 ====================================================== */
 
 interface Estimate {
-  _id: string;
+  _id?: string;
   estimate_number: string;
   customer_id: string;
   customer_name: string;
@@ -121,7 +121,7 @@ export default function JobsPage() {
       job_name: `Job for ${estimate.customer_name || customer?.legal_company_name || "Customer"}`,
       customer_id: estimate.customer_id,
       customer_name: estimate.customer_name || customer?.legal_company_name || "",
-      estimate_id: estimate._id,
+      estimate_id: estimate._id || '',
       estimate_number: estimate.estimate_number,
       job_location_id: estimate.primary_service_location_id || "",
       scheduled_date: "",
@@ -316,7 +316,6 @@ export default function JobsPage() {
               customers={customers}
               isLoading={isLoading}
               onView={handleView}
-              onDelete={handleDelete}
               onGenerateInvoice={() => {}}
               onGenerateAffidavit={() => {}}
             />

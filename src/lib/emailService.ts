@@ -43,6 +43,6 @@ export async function sendEmail(to: string, subject: string, html: string) {
     return { success: true, messageId: result.messageId };
   } catch (error) {
     console.error('Email sending failed:', error);
-    return { success: false, error: error.message };
+    return { success: false, error };
   }
 }
