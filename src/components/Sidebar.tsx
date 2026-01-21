@@ -41,7 +41,7 @@ export default function Sidebar() {
     { id: 'customer-messages', label: 'Messages', icon: MessageSquare, href: '/customer-messages' }
   ];
 
-  const isActive = (href) => pathname === href;
+  const isActive = (href: string) => pathname === href;
 
   return (
     <aside

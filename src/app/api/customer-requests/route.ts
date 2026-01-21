@@ -65,7 +65,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Error creating service request:', error);
     return NextResponse.json(
-      { success: false, message: 'Failed to create service request', error: error.message },
+      { success: false, message: 'Failed to create service request', error: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
     );
   }

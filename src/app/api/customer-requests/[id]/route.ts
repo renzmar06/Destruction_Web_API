@@ -2,10 +2,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import ServiceRequest from '@/models/ServiceRequest';
 import { connectDB } from '@/lib/mongodb';
 
-export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
+export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     await connectDB();
-    const { id } = params;
+    const { id } = await params;
     const body = await request.json();
     
     const updatedRequest = await ServiceRequest.findByIdAndUpdate(
@@ -36,10 +36,10 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
   }
 }
 
-export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     await connectDB();
-    const { id } = params;
+    const { id } = await params;
     
     const deletedRequest = await ServiceRequest.findByIdAndDelete(id);
 
