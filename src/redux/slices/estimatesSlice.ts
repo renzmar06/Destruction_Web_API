@@ -1,5 +1,26 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 
+export interface LineItem {
+  _id?: string;
+  service_id?: string;
+  service_name: string;
+  description: string;
+  quantity: number;
+  pricing_unit: string;
+  unit_price: number;
+  line_total: number;
+  sort_order?: number;
+}
+
+export interface OperationalCharge {
+  _id?: string;
+  charge_type: 'transportation' | 'fuel_surcharge' | 'storage' | 'disposal_fee' | 'credit_discount' | 'other';
+  description: string;
+  amount: number;
+  charge_method: 'fixed' | 'percentage';
+  sort_order?: number;
+}
+
 export interface Estimate {
   _id?: string;
   estimate_number: string;
@@ -18,6 +39,8 @@ export interface Estimate {
   what_is_excluded?: string;
   note_to_customer?: string;
   memo_on_statement?: string;
+  line_items?: LineItem[];
+  operational_charges?: OperationalCharge[];
   subtotal: number;
   discount_amount: number;
   discount_type: 'percentage' | 'fixed';
@@ -51,7 +74,7 @@ const initialState: EstimatesState = {
 export const fetchEstimates = createAsyncThunk('estimates/fetchEstimates', async () => {
   const response = await fetch('/api/estimates');
   const data = await response.json();
-  if (!data.success) throw new Error(data.error);
+  if (!data.success) throw new Error(data.message);
   return data.data;
 });
 
@@ -62,7 +85,7 @@ export const createEstimate = createAsyncThunk('estimates/createEstimate', async
     body: JSON.stringify(estimate),
   });
   const data = await response.json();
-  if (!data.success) throw new Error(data.error);
+  if (!data.success) throw new Error(data.message);
   return data.data;
 });
 
@@ -73,14 +96,14 @@ export const updateEstimate = createAsyncThunk('estimates/updateEstimate', async
     body: JSON.stringify(estimate),
   });
   const data = await response.json();
-  if (!data.success) throw new Error(data.error);
+  if (!data.success) throw new Error(data.message);
   return data.data;
 });
 
 export const deleteEstimate = createAsyncThunk('estimates/deleteEstimate', async (id: string) => {
   const response = await fetch(`/api/estimates/${id}`, { method: 'DELETE' });
   const data = await response.json();
-  if (!data.success) throw new Error(data.error);
+  if (!data.success) throw new Error(data.message);
   return id;
 });
 

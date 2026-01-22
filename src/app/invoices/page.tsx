@@ -59,6 +59,8 @@ export default function Invoices() {
   const [showTagsManager, setShowTagsManager] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [invoiceToDelete, setInvoiceToDelete] = useState<Invoice | null>(null);
   const [lineItems, setLineItems] = useState([{ id: 1, description: '', quantity: 1, rate: 0, amount: 0 }]);
   const [attachments, setAttachments] = useState<{id: number, name: string, url: string}[]>([]);
   const [uploading, setUploading] = useState(false);
@@ -101,6 +103,11 @@ export default function Invoices() {
     dispatch(fetchInvoices());
     dispatch(fetchCustomers());
   }, [dispatch]);
+
+  // Debug logging
+  useEffect(() => {
+    console.log('Invoices state:', { invoices, loading, error });
+  }, [invoices, loading, error]);
 
   const showSuccessToast = (message: string) => {
     setSuccessMessage(message);
@@ -294,14 +301,21 @@ export default function Invoices() {
     }
   };
 
-  const handleDelete = async (invoice: Invoice) => {
-    if (confirm(`Delete invoice ${invoice.invoice_number}? This action cannot be undone.`)) {
-      try {
-        await dispatch(deleteInvoice(invoice._id!)).unwrap();
-        showSuccessToast('Invoice deleted successfully.');
-      } catch (error) {
-        showSuccessToast('Error deleting invoice.');
-      }
+  const handleDelete = (invoice: Invoice) => {
+    setInvoiceToDelete(invoice);
+    setShowDeleteModal(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!invoiceToDelete) return;
+    
+    try {
+      await dispatch(deleteInvoice(invoiceToDelete._id!)).unwrap();
+      showSuccessToast('Invoice deleted successfully.');
+      setShowDeleteModal(false);
+      setInvoiceToDelete(null);
+    } catch (error) {
+      showSuccessToast('Error deleting invoice.');
     }
   };
 
@@ -947,7 +961,7 @@ export default function Invoices() {
         {/* Invoice List */}
         <InvoiceList 
           invoices={invoices.map(inv => ({ ...inv, id: inv._id }))}
-          customers={customers}
+          customers={Array.isArray(customers) ? customers : []}
           onView={handleView}
           onSend={handleSend}
           onFinalize={() => {}}
@@ -967,10 +981,29 @@ export default function Invoices() {
           </div>
         )}
 
-        {/* Error Display */}
-        {error && (
-          <div className="fixed bottom-8 left-8 bg-red-600 text-white px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-3 z-50">
-            <span className="font-medium">{error}</span>
+        {/* Delete Confirmation Modal */}
+        {showDeleteModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+              <h3 className="text-lg font-semibold text-slate-900 mb-4">Delete Invoice</h3>
+              <p className="text-slate-600 mb-6">
+                Are you sure you want to delete invoice {invoiceToDelete?.invoice_number}? This action cannot be undone.
+              </p>
+              <div className="flex justify-end gap-3">
+                <button
+                  onClick={() => setShowDeleteModal(false)}
+                  className="px-4 py-2 border border-slate-300 text-slate-700 rounded hover:bg-slate-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={confirmDelete}
+                  className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded"
+                >
+                  Delete
+                </button>
+              </div>
+            </div>
           </div>
         )}
       </div>

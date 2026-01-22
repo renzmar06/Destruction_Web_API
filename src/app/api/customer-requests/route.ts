@@ -1,11 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server';
 import ServiceRequest from '@/models/ServiceRequest';
+import User from '@/models/User';
 import { connectDB } from '@/lib/mongodb';
+import { getUserFromRequest } from '@/lib/auth';
 
 export async function POST(request: NextRequest) {
   try {
     //test
     await connectDB();
+    const { userId } = getUserFromRequest(request);
+    
+    if (!userId) {
+      return NextResponse.json({ 
+        success: false, 
+        message: 'User authentication required',
+        data: null 
+      }, { status: 401 });
+    }
+
     const body = await request.json();
     
     console.log('Received request body:', body);
@@ -52,7 +64,8 @@ export async function POST(request: NextRequest) {
       quantityBreakdown: body.quantityBreakdown,
       scheduleFrequency: body.scheduleFrequency,
       problemDescription: body.problemDescription,
-      status: body.isDraft ? 'draft' : 'pending'
+      status: body.isDraft ? 'draft' : 'pending',
+      user_id: userId
     });
 
     await serviceRequest.save();
@@ -75,8 +88,27 @@ export async function POST(request: NextRequest) {
 export async function GET(request: NextRequest) {
   try {
     await connectDB();
+    const { userId } = getUserFromRequest(request);
     
-    const requests = await ServiceRequest.find({}).sort({ createdAt: -1 });
+    if (!userId) {
+      return NextResponse.json({ 
+        success: false, 
+        message: 'User authentication required',
+        data: null 
+      }, { status: 401 });
+    }
+
+    // Check if user is admin
+    const user = await User.findById(userId);
+    let requests;
+    
+    if (user?.role === 'admin') {
+      // Admin can see all requests
+      requests = await ServiceRequest.find({}).sort({ createdAt: -1 });
+    } else {
+      // Regular users see only their requests
+      requests = await ServiceRequest.find({ user_id: userId }).sort({ createdAt: -1 });
+    }
     
     return NextResponse.json({
       success: true,

@@ -33,6 +33,7 @@ export interface IServiceRequest extends Document {
 }
 
 const ServiceRequestSchema: Schema = new Schema({
+  user_id: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
   requestNumber: { type: String, required: true, unique: true },
   serviceType: { type: String, required: true },
   productType: { type: String, required: true },

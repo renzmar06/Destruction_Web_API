@@ -16,7 +16,7 @@ export default function LayoutWrapper({ children }: { children: React.ReactNode 
     );
   }
 
-  if (pathname === '/login' || pathname === '/estimate-response') {
+  if (pathname === '/login' || pathname === '/estimate-response' || pathname === '/invoice-payment') {
     return <>{children}</>;
   }
 

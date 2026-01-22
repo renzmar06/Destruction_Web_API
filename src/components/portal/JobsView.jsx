@@ -15,12 +15,9 @@ const statusConfig = {
   archived: { label: 'Archived', className: 'bg-slate-100 text-slate-600' }
 };
 
-export default function JobsView({ customerId }) {
-  const { jobs, loading } = useAppSelector(state => state.jobs);
-  
-  // Filter jobs for the specific customer
-  const customerJobs = jobs.filter(job => job.customer_id === customerId);
-  const isLoading = loading;
+export default function JobsView({ customerId, selectedJob, onBack }) {
+  const jobs = selectedJob ? [selectedJob] : [];
+  const isLoading = false;
 
   if (isLoading) {
     return <div className="text-center py-12 text-slate-500">Loading jobs...</div>;
@@ -63,7 +60,7 @@ export default function JobsView({ customerId }) {
               <div className="space-y-3">
                 <div className="flex items-center gap-2 text-sm text-slate-600">
                   <Calendar className="w-4 h-4" />
-                  <span>Scheduled: {format(new Date(job.scheduled_date), 'MMMM d, yyyy')}</span>
+                  <span>Scheduled: {job.scheduled_date ? format(new Date(job.scheduled_date), 'MMMM d, yyyy') : 'Not scheduled'}</span>
                 </div>
 
                 {job.actual_start_date && (

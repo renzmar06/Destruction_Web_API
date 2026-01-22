@@ -1,36 +1,42 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
-import { verifyToken } from './lib/auth';
-
-const protectedRoutes = ['/dashboard','/CustomerDashboard', '/customer-requests', '/customer-estimates', '/requests', '/estimates'];
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   
-  // Check if route is protected
-  const isProtectedRoute = protectedRoutes.some(route => pathname.startsWith(route));
-  if (isProtectedRoute) {
-    // Get token from cookie
-    const token = request.cookies.get('token')?.value;
-    if (!token) {
-      return NextResponse.redirect(new URL('/login', request.url));
-    }
-    try {
-      const payload = verifyToken(token);
-      
-      if (!payload) {
-        console.log('Invalid token');
-        return NextResponse.redirect(new URL('/login', request.url));
-      }
-    } catch (error) {
-      console.log('Token verification error:', error);
-      return NextResponse.redirect(new URL('/login', request.url));
-    }
+  // Public paths that don't require authentication
+  const publicPaths = ['/login', '/register', '/estimate-response', '/invoice-payment'];
+  
+  // Check if the current path is public
+  const isPublicPath = publicPaths.some(path => pathname.startsWith(path));
+  
+  if (isPublicPath) {
+    return NextResponse.next();
   }
   
+  // Get token from cookies
+  const token = request.cookies.get('token')?.value;
+  
+  if (!token) {
+    // Redirect to login if no token
+    return NextResponse.redirect(new URL('/login', request.url));
+  }
+  
+  // For now, just pass through if token exists
+  // We'll validate the token in individual API routes
   return NextResponse.next();
 }
 
 export const config = {
-  matcher: ['/((?!api|_next/static|_next/image|favicon.ico).*)'],
+  matcher: [
+    /*
+     * Match all request paths except for the ones starting with:
+     * - api (API routes)
+     * - _next/static (static files)
+     * - _next/image (image optimization files)
+     * - favicon.ico (favicon file)
+     * - login, register, estimate-response (public pages)
+     */
+    '/((?!api|_next/static|_next/image|favicon.ico|login|register|estimate-response).*)',
+  ],
 };

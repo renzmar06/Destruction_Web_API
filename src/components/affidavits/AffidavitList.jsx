@@ -1,13 +1,10 @@
 import React, { useState } from 'react';
-import { base44 } from "@/api/base44Client";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Eye, Lock, FileCheck, Search, Download, XCircle } from "lucide-react";
 import { motion } from "framer-motion";
-import { format } from "date-fns";
-import RevokeDocumentModal from "./RevokeDocumentModal";
 
 const statusConfig = {
   pending: { label: 'Pending', className: 'bg-slate-100 text-slate-700 border-slate-200' },
@@ -18,13 +15,16 @@ const statusConfig = {
 
 export default function AffidavitList({ affidavits, onView, onLock, isLoading }) {
   const [searchTerm, setSearchTerm] = useState('');
-  const [revokingAffidavit, setRevokingAffidavit] = useState(null);
 
   const filteredAffidavits = affidavits.filter(affidavit =>
     affidavit.affidavit_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     affidavit.job_reference?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     affidavit.customer_name?.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  const handleDownload = (affidavit, type) => {
+    alert(`${type} download functionality will be implemented`);
+  };
 
   return (
     <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden">
@@ -84,7 +84,7 @@ export default function AffidavitList({ affidavits, onView, onLock, isLoading })
                     </Badge>
                   </TableCell>
                   <TableCell className="text-slate-600 text-sm">
-                    {affidavit.date_issued ? format(new Date(affidavit.date_issued), 'MMM d, yyyy') : '-'}
+                    {affidavit.date_issued ? new Date(affidavit.date_issued).toLocaleDateString() : '-'}
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex items-center justify-end gap-2">
@@ -102,25 +102,7 @@ export default function AffidavitList({ affidavits, onView, onLock, isLoading })
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={async () => {
-                              try {
-                                const response = await base44.functions.invoke('generateCertificateOfDestruction', {
-                                  affidavit_id: affidavit.id
-                                });
-                                
-                                const blob = new Blob([response.data], { type: 'application/pdf' });
-                                const url = window.URL.createObjectURL(blob);
-                                const a = document.createElement('a');
-                                a.href = url;
-                                a.download = `Certificate-${affidavit.affidavit_number}.pdf`;
-                                document.body.appendChild(a);
-                                a.click();
-                                window.URL.revokeObjectURL(url);
-                                a.remove();
-                              } catch (error) {
-                                alert('Failed to generate Certificate: ' + error.message);
-                              }
-                            }}
+                            onClick={() => handleDownload(affidavit, 'Certificate')}
                             className="h-8 gap-2 text-green-600 hover:text-green-700"
                             title="Download Certificate of Destruction"
                           >
@@ -130,25 +112,7 @@ export default function AffidavitList({ affidavits, onView, onLock, isLoading })
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={async () => {
-                              try {
-                                const response = await base44.functions.invoke('generateAffidavitOfDestruction', {
-                                  affidavit_id: affidavit.id
-                                });
-                                
-                                const blob = new Blob([response.data], { type: 'application/pdf' });
-                                const url = window.URL.createObjectURL(blob);
-                                const a = document.createElement('a');
-                                a.href = url;
-                                a.download = `Affidavit-${affidavit.affidavit_number}.pdf`;
-                                document.body.appendChild(a);
-                                a.click();
-                                window.URL.revokeObjectURL(url);
-                                a.remove();
-                              } catch (error) {
-                                alert('Failed to generate Affidavit: ' + error.message);
-                              }
-                            }}
+                            onClick={() => handleDownload(affidavit, 'Affidavit')}
                             className="h-8 gap-2 text-blue-600 hover:text-blue-700"
                             title="Download Legal Affidavit"
                           >
@@ -158,36 +122,14 @@ export default function AffidavitList({ affidavits, onView, onLock, isLoading })
                         </>
                       )}
                       {affidavit.affidavit_status === 'issued' && (
-                        <>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => onLock(affidavit)}
-                            className="h-8 gap-2 text-purple-600 hover:text-purple-700"
-                          >
-                            <Lock className="w-4 h-4" />
-                            Lock
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => setRevokingAffidavit(affidavit)}
-                            className="h-8 gap-2 text-red-600 hover:text-red-700"
-                          >
-                            <XCircle className="w-4 h-4" />
-                            Revoke
-                          </Button>
-                        </>
-                      )}
-                      {affidavit.affidavit_status === 'locked' && !affidavit.revoked && (
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => setRevokingAffidavit(affidavit)}
-                          className="h-8 gap-2 text-red-600 hover:text-red-700"
+                          onClick={() => onLock(affidavit)}
+                          className="h-8 gap-2 text-purple-600 hover:text-purple-700"
                         >
-                          <XCircle className="w-4 h-4" />
-                          Revoke
+                          <Lock className="w-4 h-4" />
+                          Lock
                         </Button>
                       )}
                     </div>
@@ -198,14 +140,6 @@ export default function AffidavitList({ affidavits, onView, onLock, isLoading })
           </TableBody>
         </Table>
       </div>
-
-      {/* Revoke Modal */}
-      {revokingAffidavit && (
-        <RevokeDocumentModal
-          affidavit={revokingAffidavit}
-          onClose={() => setRevokingAffidavit(null)}
-        />
-      )}
     </div>
   );
 }

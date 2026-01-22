@@ -1,7 +1,7 @@
 import mongoose from 'mongoose';
 
 const customerSchema = new mongoose.Schema({
-  user_id: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: false },
+  user_id: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
   title: { type: String, default: '' },
   first_name: { type: String, required: true },
   middle_name: { type: String, default: '' },

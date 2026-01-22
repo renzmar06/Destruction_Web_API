@@ -6,23 +6,34 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
-import { X, Upload, Image as ImageIcon } from "lucide-react";
-import { base44 } from "@/api/base44Client";
+import { X, Upload, Image as ImageIcon, CheckCircle } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import CustomSelectInput from "./CustomSelectInput";
 
 export default function ServiceFormModal({ 
   open, 
   onOpenChange, 
-  formData, 
+  formData = {}, 
   onChange, 
   onSave,
   onDelete,
-  errors,
+  errors = {},
   isSaving,
   isDeleting,
-  editingService 
+  editingService,
+  onShowToast
 }) {
   const [uploading, setUploading] = useState(false);
+  const [showToast, setShowToast] = useState(false);
+  const [toastMessage, setToastMessage] = useState('');
+  const [toastType, setToastType] = useState('success'); // 'success' or 'error'
+
+  const showToastMessage = (message, type = 'success') => {
+    setToastMessage(message);
+    setToastType(type);
+    setShowToast(true);
+    setTimeout(() => setShowToast(false), 3000);
+  };
 
   const handleChange = (field, value) => {
     onChange({ ...formData, [field]: value });
@@ -32,12 +43,40 @@ export default function ServiceFormModal({
     const file = e.target.files?.[0];
     if (!file) return;
 
+    // Validate file type and size
+    if (!file.type.startsWith('image/')) {
+      alert('Please select an image file');
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) { // 5MB limit
+      alert('Image size must be less than 5MB');
+      return;
+    }
+
     setUploading(true);
     try {
-      const result = await base44.integrations.Core.UploadFile({ file });
-      handleChange('image_url', result.file_url);
+      const uploadFormData = new FormData();
+      uploadFormData.append('file', file);
+      
+      const response = await fetch('/api/upload', {
+        method: 'POST',
+        body: uploadFormData,
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Upload failed: ${response.status}`);
+      }
+      
+      const result = await response.json();
+      
+      if (result.success) {
+        handleChange('image_url', result.url);
+      } else {
+        throw new Error(result.message || 'Upload failed');
+      }
     } catch (error) {
       console.error('Failed to upload image:', error);
+      showToastMessage(`Failed to upload image: ${error.message}`, 'error');
     } finally {
       setUploading(false);
     }
@@ -157,8 +196,13 @@ export default function ServiceFormModal({
                   />
                 </div>
                 <button 
-                  className="text-blue-600 text-sm mt-2 hover:text-blue-700 w-full"
-                  onClick={() => document.querySelector('input[type="file"]').click()}
+                  type="button"
+                  className="text-blue-600 text-sm mt-2 hover:text-blue-700 w-full disabled:opacity-50"
+                  onClick={() => {
+                    const fileInput = document.querySelector('input[type="file"]');
+                    if (fileInput) fileInput.click();
+                  }}
+                  disabled={uploading}
                 >
                   {uploading ? 'Uploading...' : formData.image_url ? 'Change image' : 'Add an image'}
                 </button>
@@ -238,7 +282,7 @@ export default function ServiceFormModal({
                     <div className="flex items-center justify-between">
                       <Label htmlFor="sales_tax_category" className="text-sm font-semibold text-slate-800">Sales tax category</Label>
                       <a href="#" className="text-xs text-blue-600 hover:text-blue-700 font-medium">
-                        What's a sales tax category?
+                        What`s a sales tax category?
                       </a>
                     </div>
                     <Select 
@@ -262,7 +306,7 @@ export default function ServiceFormModal({
                       Pricing unit<span className="text-red-500">*</span>
                     </Label>
                     <CustomSelectInput
-                      value={formData.pricing_unit}
+                      value={formData.pricing_unit || ''}
                       onValueChange={(value) => handleChange('pricing_unit', value)}
                       options={[
                         { value: 'per_lb', label: 'Per Pound (lb)' },
@@ -342,20 +386,47 @@ export default function ServiceFormModal({
             <Button 
               variant="outline" 
               onClick={() => onOpenChange(false)}
+              disabled={isSaving || isDeleting}
               className="h-11 px-6"
             >
               Cancel
             </Button>
             <Button 
-              onClick={onSave}
-              disabled={isSaving}
-              className="h-11 px-8 bg-green-600 hover:bg-green-700"
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                if (!isSaving && !isDeleting) {
+                  onSave();
+                }
+              }}
+              disabled={isSaving || isDeleting}
+              className="h-11 px-8 bg-green-600 hover:bg-green-700 disabled:opacity-50"
             >
               {isSaving ? 'Saving...' : 'Save'}
             </Button>
           </div>
         </div>
       </DialogContent>
+
+      {/* Toast */}
+      <AnimatePresence>
+        {showToast && (
+          <motion.div
+            initial={{ opacity: 0, y: 50 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 50 }}
+            className={`fixed bottom-8 right-8 px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-3 z-50 ${
+              toastType === 'success' 
+                ? 'bg-emerald-600 text-white' 
+                : 'bg-red-600 text-white'
+            }`}
+          >
+            <CheckCircle className="w-5 h-5" />
+            <span className="font-medium">{toastMessage}</span>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </Dialog>
   );
 }

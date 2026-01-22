@@ -17,6 +17,7 @@ import OperationalChargesSection from "@/components/estimates/OperationalCharges
 import EstimateSummary from "@/components/estimates/EstimateSummary";
 import CustomerNotesSection from "@/components/estimates/CustomerNotesSection";
 import AssumptionsSection from "@/components/estimates/AssumptionsSection";
+import EstimatesView from "@/components/portal/EstimatesView";
 
 /* ======================================================
    TYPES
@@ -73,9 +74,12 @@ function EstimatesPageContent(): React.JSX.Element {
   const [editingEstimate, setEditingEstimate] = useState<Estimate | null>(null);
   const [showSuccess, setShowSuccess] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
+  const [selectedEstimateForView, setSelectedEstimateForView] = useState<Estimate | null>(null);
 
   const [lineItemsTotal, setLineItemsTotal] = useState(0);
   const [chargesTotal, setChargesTotal] = useState(0);
+  const [unsavedLineItems, setUnsavedLineItems] = useState([]);
+  const [unsavedCharges, setUnsavedCharges] = useState([]);
 
   const locations: unknown[] = [];
 
@@ -116,7 +120,7 @@ function EstimatesPageContent(): React.JSX.Element {
      HELPERS
   ====================================================== */
 
-  const showSuccessToast = (message: string): void => {
+  const showToast = (message: string, isError = false): void => {
     setSuccessMessage(message);
     setShowSuccess(true);
     setTimeout(() => setShowSuccess(false), 3000);
@@ -147,13 +151,15 @@ function EstimatesPageContent(): React.JSX.Element {
   const handleCancel = (): void => {
     setShowForm(false);
     setEditingEstimate(null);
+    setUnsavedLineItems([]);
+    setUnsavedCharges([]);
   };
 
   const handleDelete = async (estimateId: string): Promise<void> => {
     if (window.confirm('Are you sure you want to delete this estimate? This action cannot be undone.')) {
       try {
         await dispatch(deleteEstimate(estimateId)).unwrap();
-        showSuccessToast("Estimate deleted successfully.");
+        showToast("Estimate deleted successfully.");
         if (editingEstimate?.id === estimateId || editingEstimate?._id === estimateId) {
           setShowForm(false);
           setEditingEstimate(null);
@@ -169,29 +175,44 @@ function EstimatesPageContent(): React.JSX.Element {
     try {
       // Validate required fields
       if (!formData.customer_id || !formData.customer_name) {
-        alert('Please select a customer before saving the estimate.');
+        showToast('Please select a customer before saving the estimate.', true);
         return;
       }
       
       if (!formData.valid_until_date) {
-        alert('Please set a valid until date for the estimate.');
+        showToast('Please set a valid until date for the estimate.', true);
         return;
       }
       
       if (editingEstimate?.id || editingEstimate?._id) {
+        // Phase 2: Update existing estimate with line items and charges
+        const estimateData = {
+          ...formData,
+          line_items: unsavedLineItems,
+          operational_charges: unsavedCharges
+        };
+        
         const estimateId = (editingEstimate._id || editingEstimate.id) as string;
-        await dispatch(updateEstimate({ id: estimateId, estimate: formData as Partial<Estimate> })).unwrap();
-        showSuccessToast("Estimate updated successfully.");
+        await dispatch(updateEstimate({ id: estimateId, estimate: estimateData as Partial<Estimate> })).unwrap();
+        showToast("Estimate updated successfully.");
         setShowForm(false);
         setEditingEstimate(null);
+        setUnsavedLineItems([]);
+        setUnsavedCharges([]);
       } else {
-        const result = await dispatch(createEstimate(formData as Partial<Estimate>)).unwrap();
+        // Phase 1: Create estimate with basic details only
+        const basicEstimateData = {
+          ...formData,
+          // Don't include line items and charges in initial creation
+        };
+        
+        const result = await dispatch(createEstimate(basicEstimateData as Partial<Estimate>)).unwrap();
         setEditingEstimate(result);
-        showSuccessToast("Estimate created successfully.");
+        showToast("Estimate created successfully. You can now add line items and charges.");
       }
     } catch (error) {
       console.error('Failed to save estimate:', error);
-      alert('Failed to save estimate. Please check all required fields.');
+      showToast('Failed to save estimate. Please check all required fields.', true);
     }
   };
 
@@ -216,7 +237,26 @@ function EstimatesPageContent(): React.JSX.Element {
         </div>
 
         <AnimatePresence mode="wait">
-          {showForm ? (
+          {selectedEstimateForView ? (
+            <motion.div
+              key="estimate-view"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+            >
+              <button
+                onClick={() => setSelectedEstimateForView(null)}
+                className="mb-4 px-4 py-2 text-slate-600 hover:text-slate-900 flex items-center gap-2"
+              >
+                ← Back to Estimates
+              </button>
+              <EstimatesView 
+                customerId={selectedEstimateForView.customer_id}
+                selectedEstimate={selectedEstimateForView}
+                onBack={() => setSelectedEstimateForView(null)}
+              />
+            </motion.div>
+          ) : showForm ? (
             <motion.div
               key="form"
               initial={{ opacity: 0, y: 20 }}
@@ -255,8 +295,8 @@ function EstimatesPageContent(): React.JSX.Element {
                 />
               </div>
 
-              {/* Only show line items and charges for saved estimates */}
-              {editingEstimate && (editingEstimate.id || editingEstimate._id) && (
+              {/* Only show line items and charges AFTER estimate is created */}
+              {editingEstimate && (
                 <>
                   <LineItemsSection
                     estimateId={(editingEstimate._id || editingEstimate.id) as string}
@@ -264,16 +304,16 @@ function EstimatesPageContent(): React.JSX.Element {
                     isReadOnly={false}
                     estimateStatus={formData.estimate_status}
                     customerId={formData.customer_id}
-                    unsavedLineItems={[]}
-                    onUnsavedLineItemsChange={() => {}}
+                    unsavedLineItems={unsavedLineItems}
+                    onUnsavedLineItemsChange={setUnsavedLineItems}
                   />
 
                   <OperationalChargesSection
                     estimateId={(editingEstimate._id || editingEstimate.id) as string}
                     onTotalChange={setChargesTotal}
                     isReadOnly={false}
-                    unsavedCharges={[]}
-                    onUnsavedChargesChange={() => {}}
+                    unsavedCharges={unsavedCharges}
+                    onUnsavedChargesChange={setUnsavedCharges}
                   />
                 </>
               )}
@@ -291,6 +331,19 @@ function EstimatesPageContent(): React.JSX.Element {
                 >
                   {editingEstimate ? "Update Estimate" : "Create Estimate"}
                 </button>
+                {editingEstimate && (
+                  <button
+                    onClick={() => {
+                      setShowForm(false);
+                      setEditingEstimate(null);
+                      setUnsavedLineItems([]);
+                      setUnsavedCharges([]);
+                    }}
+                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded"
+                  >
+                    Done
+                  </button>
+                )}
               </div>
             </motion.div>
           ) : (
@@ -298,7 +351,11 @@ function EstimatesPageContent(): React.JSX.Element {
               estimates={estimates}
               customers={customers}
               isLoading={loading}
+              onShowToast={showToast}
               onView={(estimate: Estimate) => {
+                setSelectedEstimateForView(estimate);
+              }}
+              onEdit={(estimate: Estimate) => {
                 setEditingEstimate(estimate);
                 // Convert MongoDB _id to id and format dates for HTML inputs
                 const estimateData = {
@@ -308,6 +365,9 @@ function EstimatesPageContent(): React.JSX.Element {
                   valid_until_date: estimate.valid_until_date ? new Date(estimate.valid_until_date).toISOString().split('T')[0] : ''
                 };
                 setFormData(estimateData);
+                // Load existing line items and charges
+                setUnsavedLineItems((estimate as any).line_items || []);
+                setUnsavedCharges((estimate as any).operational_charges || []);
                 setShowForm(true);
               }}
               onDelete={handleDelete}

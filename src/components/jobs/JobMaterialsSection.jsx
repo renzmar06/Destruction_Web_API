@@ -1,18 +1,26 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useDispatch } from 'react-redux';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Plus, Trash2, Package } from "lucide-react";
 import { Card } from "@/components/ui/card";
+import { updateJob } from '@/redux/slices/jobsSlice';
+import { useToast } from "@/components/ui/use-toast";
 
-export default function JobMaterialsSection({ jobId, isReadOnly }) {
+export default function JobMaterialsSection({ jobId, jobData, onJobUpdate, onMaterialsChange, isReadOnly }) {
+  const dispatch = useDispatch();
+  const { toast } = useToast();
   const [editingMaterial, setEditingMaterial] = useState(null);
-  const [materials, setMaterials] = useState([]);
+  const [materials, setMaterials] = useState(jobData?.materials || []);
+
+  useEffect(() => {
+    setMaterials(jobData?.materials || []);
+  }, [jobData?.materials]);
 
   const handleAddNew = () => {
     setEditingMaterial({
-      job_id: jobId,
       material_type: '',
       packaging_type: '',
       quantity: 0,
@@ -24,18 +32,74 @@ export default function JobMaterialsSection({ jobId, isReadOnly }) {
     });
   };
 
-  const handleSave = () => {
-    if (editingMaterial.id) {
-      setMaterials(prev => prev.map(m => m.id === editingMaterial.id ? editingMaterial : m));
-    } else {
-      setMaterials(prev => [...prev, { ...editingMaterial, id: Date.now() }]);
+  const handleSave = async () => {
+    try {
+      let updatedMaterials;
+      if (editingMaterial._id) {
+        updatedMaterials = materials.map(m => m._id === editingMaterial._id ? editingMaterial : m);
+      } else {
+        updatedMaterials = [...materials, { ...editingMaterial, id: Date.now() }];
+      }
+      
+      setMaterials(updatedMaterials);
+      setEditingMaterial(null);
+      
+      // If jobId is 'new', update parent formData
+      if (jobId === 'new' && onMaterialsChange) {
+        onMaterialsChange(updatedMaterials);
+        toast({
+          title: "Success",
+          description: "Material added. Save job to persist.",
+        });
+        return;
+      }
+      
+      await dispatch(updateJob({ id: jobId, materials: updatedMaterials })).unwrap();
+      
+      if (onJobUpdate) onJobUpdate();
+      toast({
+        title: "Success",
+        description: "Material saved successfully.",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to save material.",
+        variant: "destructive",
+      });
     }
-    setEditingMaterial(null);
   };
 
-  const handleDelete = (id) => {
-    if (confirm('Delete this material entry?')) {
-      setMaterials(prev => prev.filter(m => m.id !== id));
+  const handleDelete = async (materialId) => {
+    if (!confirm('Delete this material entry?')) return;
+    
+    try {
+      const updatedMaterials = materials.filter(m => (m._id || m.id) !== materialId);
+      setMaterials(updatedMaterials);
+      
+      // If jobId is 'new', update parent formData
+      if (jobId === 'new' && onMaterialsChange) {
+        onMaterialsChange(updatedMaterials);
+        toast({
+          title: "Success",
+          description: "Material removed.",
+        });
+        return;
+      }
+      
+      await dispatch(updateJob({ id: jobId, materials: updatedMaterials })).unwrap();
+      
+      if (onJobUpdate) onJobUpdate();
+      toast({
+        title: "Success",
+        description: "Material deleted successfully.",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to delete material.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -84,7 +148,7 @@ export default function JobMaterialsSection({ jobId, isReadOnly }) {
             </thead>
             <tbody>
               {materials.map((material) => (
-                <tr key={material.id} className="border-b border-slate-100">
+                <tr key={material._id || material.id} className="border-b border-slate-100">
                   <td className="p-3 capitalize">{material.material_type?.replace(/_/g, ' ')}</td>
                   <td className="p-3 capitalize">{material.packaging_type?.replace(/_/g, ' ')}</td>
                   <td className="p-3 text-right">{material.quantity} {material.unit_of_measure}</td>
@@ -95,7 +159,7 @@ export default function JobMaterialsSection({ jobId, isReadOnly }) {
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => handleDelete(material.id)}
+                        onClick={() => handleDelete(material._id || material.id)}
                         className="h-8 w-8 p-0 text-red-600 hover:text-red-700"
                       >
                         <Trash2 className="w-4 h-4" />

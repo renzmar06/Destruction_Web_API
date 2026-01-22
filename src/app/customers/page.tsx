@@ -337,7 +337,7 @@ function CustomersPageContent() {
             </motion.div>
           ) : (
             <CustomerList
-              customers={customers}
+              customers={Array.isArray(customers) ? customers : []}
               isLoading={isLoading}
               onView={handleView}
               onArchive={() => {}}

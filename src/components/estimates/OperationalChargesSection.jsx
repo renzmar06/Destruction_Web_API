@@ -21,7 +21,7 @@ export default function OperationalChargesSection({ estimateId, onTotalChange, i
 
   const savedCharges = [];
   const isLoading = false;
-  const charges = estimateId ? savedCharges : unsavedCharges;
+  const charges = unsavedCharges; // Always use unsavedCharges
 
   useEffect(() => {
     const total = charges.reduce((sum, charge) => sum + (charge.amount || 0), 0);
@@ -30,11 +30,7 @@ export default function OperationalChargesSection({ estimateId, onTotalChange, i
 
   const createMutation = {
     mutate: (data) => {
-      if (estimateId) {
-        alert('Create functionality not yet implemented');
-      } else {
-        onUnsavedChargesChange([...unsavedCharges, { ...data, id: Date.now().toString() }]);
-      }
+      onUnsavedChargesChange([...unsavedCharges, { ...data, id: Date.now().toString() }]);
       setShowForm(false);
       setEditingCharge(null);
     },
@@ -43,14 +39,10 @@ export default function OperationalChargesSection({ estimateId, onTotalChange, i
 
   const updateMutation = {
     mutate: ({ id, data }) => {
-      if (estimateId) {
-        alert('Update functionality not yet implemented');
-      } else {
-        const updated = unsavedCharges.map(charge => 
-          charge.id === id ? { ...charge, ...data } : charge
-        );
-        onUnsavedChargesChange(updated);
-      }
+      const updated = unsavedCharges.map(charge => 
+        charge.id === id ? { ...charge, ...data } : charge
+      );
+      onUnsavedChargesChange(updated);
       setShowForm(false);
       setEditingCharge(null);
     },
@@ -59,11 +51,7 @@ export default function OperationalChargesSection({ estimateId, onTotalChange, i
 
   const deleteMutation = {
     mutate: (id) => {
-      if (estimateId) {
-        alert('Delete functionality not yet implemented');
-      } else {
-        onUnsavedChargesChange(unsavedCharges.filter(charge => charge.id !== id));
-      }
+      onUnsavedChargesChange(unsavedCharges.filter(charge => charge.id !== id));
     }
   };
 
