@@ -98,7 +98,11 @@ export default function CustomerJobs() {
         </div>
 
         {/* Content */}
-        <JobsView customerId={customer._id || customer.id} />
+        <JobsView 
+          customerId={customer._id || customer.id} 
+          selectedJob={null}
+          onBack={() => {}}
+        />
       </div>
     </div>
   );
