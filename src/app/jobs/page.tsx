@@ -303,9 +303,8 @@ export default function JobsPage() {
                 ← Back to Jobs
               </button>
               <JobsView 
-                customerId={selectedJobForView.customer_id}
-                selectedJob={selectedJobForView}
-                onBack={() => setSelectedJobForView(null)}
+              
+             
               />
             </motion.div>
           ) : showEstimateSelector ? (
