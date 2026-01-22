@@ -101,8 +101,7 @@ export default function CustomerJobs() {
         {/* Content */}
         <JobsView 
           userId={user.id || customer.id} 
-          selectedJob={null}
-          onBack={() => {}}
+          
         />
       </div>
     </div>

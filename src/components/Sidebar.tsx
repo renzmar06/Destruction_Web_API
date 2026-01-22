@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useSelector, useDispatch } from 'react-redux';
-import { RootState } from '@/redux/store';
+import { RootState, AppDispatch } from '@/redux/store';
 import { loadUserFromStorage, fetchCurrentUser } from '@/redux/slices/authSlice';
 import { 
   ChevronLeft, 
@@ -30,7 +30,7 @@ export default function Sidebar() {
   const [collapsed, setCollapsed] = useState(false);
   const [customerMenuOpen, setCustomerMenuOpen] = useState(false);
   const pathname = usePathname();
-  const dispatch = useDispatch();
+  const dispatch = useDispatch<AppDispatch>();
   const { user } = useSelector((state: RootState) => state.auth);
 
   useEffect(() => {
