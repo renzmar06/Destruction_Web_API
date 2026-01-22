@@ -15,7 +15,11 @@ import {
   Calendar,
   MessageSquare,
   Bell,
-  DollarSign
+  DollarSign,
+  CheckSquare,
+  Package,
+  Truck,
+  FileCheck
 } from 'lucide-react';
 
 export default function Sidebar() {
@@ -26,9 +30,12 @@ export default function Sidebar() {
   const navItems = [
     { id: 'dashboard', label: 'Dashboard', icon: Home, href: '/' },
     { id: 'requests', label: 'Service Requests', icon: ClipboardList, href: '/service-requests' },
+    { id: 'products-services', label: 'Products Services', icon: Package, href: '/products-services' },
     { id: 'estimates', label: 'Estimates', icon: FileText, href: '/estimates' },
     { id: 'jobs', label: 'Jobs', icon: Calendar, href: '/jobs' },
+    { id: 'affidavits', label: 'Affidavits', icon: FileCheck, href: '/affidavits' },
     { id: 'customers', label: 'Customers', icon: Users, href: '/customers' },
+    { id: 'vendors', label: 'Vendors', icon: Truck, href: '/vendors' },
     { id: 'invoices', label: 'Invoices', icon: DollarSign, href: '/invoices' }
   ];
 

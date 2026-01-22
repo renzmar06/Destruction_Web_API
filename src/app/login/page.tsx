@@ -20,14 +20,17 @@ export default function LoginPage() {
     e.preventDefault();
     setLoading(true);
     setError('');
+    
+    console.log('Form submitted with:', { email, password: '***' });
 
     const success = await login(email, password);
     
     if (!success) {
+      console.log('Login failed, showing error');
       setError('Invalid email or password');
       setLoading(false);
     }
-    // Don't set loading to false on success as redirect will happen
+    // Don't set loading to false on success - redirect will happen
   };
 
   return (

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useSelector, useDispatch } from 'react-redux';
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -7,6 +8,7 @@ import { Plus, Trash2, Package, Filter, ExternalLink } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Link } from "next/link";
 import { applyPriceRulesToService } from "./PriceRuleApplier";
+import { fetchServices } from '@/redux/slices/servicesSlice';
 
 const pricingUnitLabels = {
   per_case: 'Per Case',
@@ -39,19 +41,24 @@ const packagingTypeLabels = {
 };
 
 export default function LineItemsSection({ estimateId, onTotalChange, isReadOnly, estimateStatus, unsavedLineItems = [], onUnsavedLineItemsChange, customerId }) {
+  const dispatch = useDispatch();
+  const { services, loading: servicesLoading } = useSelector(state => state.services);
   const [editingItem, setEditingItem] = useState(null);
   const [showForm, setShowForm] = useState(false);
   const [categoryFilter, setCategoryFilter] = useState('all');
 
   const savedLineItems = [];
   const isLoading = false;
-  const lineItems = estimateId ? savedLineItems : unsavedLineItems;
+  const lineItems = estimateId ? [...savedLineItems, ...unsavedLineItems] : unsavedLineItems;
 
-  const services = [];
+  // Fetch services on component mount
+  useEffect(() => {
+    dispatch(fetchServices());
+  }, [dispatch]);
 
   const filteredLineItems = lineItems.filter(item => {
     if (categoryFilter === 'all') return true;
-    const service = services.find(s => s.id === item.service_id);
+    const service = services.find(s => s._id === item.service_id);
     return service?.service_category === categoryFilter;
   });
 
@@ -62,11 +69,10 @@ export default function LineItemsSection({ estimateId, onTotalChange, isReadOnly
 
   const createMutation = {
     mutate: (data) => {
-      if (estimateId) {
-        alert('Create functionality not yet implemented');
-      } else {
-        onUnsavedLineItemsChange([...unsavedLineItems, { ...data, id: Date.now().toString() }]);
-      }
+      console.log('Adding line item:', data);
+      const newLineItems = [...unsavedLineItems, { ...data, id: Date.now().toString() }];
+      console.log('Updated line items:', newLineItems);
+      onUnsavedLineItemsChange(newLineItems);
       setShowForm(false);
       setEditingItem(null);
     },
@@ -76,7 +82,11 @@ export default function LineItemsSection({ estimateId, onTotalChange, isReadOnly
   const updateMutation = {
     mutate: ({ id, data }) => {
       if (estimateId) {
-        alert('Update functionality not yet implemented');
+        // For saved estimates, update in unsaved items temporarily
+        const updated = unsavedLineItems.map(item => 
+          item.id === id ? { ...item, ...data } : item
+        );
+        onUnsavedLineItemsChange(updated);
       } else {
         const updated = unsavedLineItems.map(item => 
           item.id === id ? { ...item, ...data } : item
@@ -92,7 +102,8 @@ export default function LineItemsSection({ estimateId, onTotalChange, isReadOnly
   const deleteMutation = {
     mutate: (id) => {
       if (estimateId) {
-        alert('Delete functionality not yet implemented');
+        // For saved estimates, remove from unsaved items
+        onUnsavedLineItemsChange(unsavedLineItems.filter(item => item.id !== id));
       } else {
         onUnsavedLineItemsChange(unsavedLineItems.filter(item => item.id !== id));
       }
@@ -197,7 +208,7 @@ export default function LineItemsSection({ estimateId, onTotalChange, isReadOnly
               </thead>
               <tbody>
                 {filteredLineItems.map((item) => {
-                  const service = services.find(s => s.id === item.service_id);
+                  const service = services.find(s => s._id === item.service_id);
                   return (
                   <tr key={item.id} className="border-b border-blue-100 hover:bg-blue-50/50 transition-colors">
                     <td className="p-4">
@@ -269,7 +280,7 @@ function LineItemForm({ item, services, onSave, onCancel, isSaving, estimateStat
   };
 
   const handleServiceSelect = async (serviceId) => {
-    const service = services.find(s => s.id === serviceId);
+    const service = services.find(s => s._id === serviceId);
     if (!service) return;
     
     setApplyingPriceRules(true);
@@ -314,8 +325,8 @@ function LineItemForm({ item, services, onSave, onCancel, isSaving, estimateStat
               {services.length === 0 ? (
                 <div className="p-3 text-sm text-slate-500">No services available. Add services in Products & Services first.</div>
               ) : (
-                services.map(service => (
-                  <SelectItem key={service.id} value={service.id}>
+                services.filter(service => service.service_status === 'active').map(service => (
+                  <SelectItem key={service._id} value={service._id}>
                     <div className="flex items-center justify-between gap-4 w-full">
                       <span className="font-medium">{service.service_name}</span>
                       <span className="text-slate-500">

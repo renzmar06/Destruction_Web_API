@@ -4,7 +4,7 @@ import { TrendingUp, DollarSign, Clock, Package, AlertCircle, CheckCircle } from
 import { Badge } from "@/components/ui/badge";
 
 export default function VendorPerformanceReport({ vendor, expenses }) {
-  const vendorExpenses = expenses.filter(e => e.vendor_id === vendor.id);
+  const vendorExpenses = expenses.filter(e => e.vendor_id === vendor._id);
   
   // Calculate metrics
   const totalSpent = vendorExpenses.reduce((sum, e) => sum + (e.amount || 0), 0);

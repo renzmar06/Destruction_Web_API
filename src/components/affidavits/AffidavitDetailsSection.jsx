@@ -25,27 +25,52 @@ export default function AffidavitDetailsSection({ data, onChange, isReadOnly }) 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label>Service Provider Legal Name</Label>
-          <Input value={data.service_provider_name || ''} disabled className="bg-slate-50" />
+          <Input 
+            value={data.service_provider_name || ''} 
+            onChange={(e) => handleChange('service_provider_name', e.target.value)}
+            disabled={isReadOnly} 
+            className={isReadOnly ? "bg-slate-50" : ""} 
+          />
         </div>
 
         <div className="space-y-2">
           <Label>Service Provider EIN</Label>
-          <Input value={data.service_provider_ein || ''} disabled className="bg-slate-50" />
+          <Input 
+            value={data.service_provider_ein || ''} 
+            onChange={(e) => handleChange('service_provider_ein', e.target.value)}
+            disabled={isReadOnly} 
+            className={isReadOnly ? "bg-slate-50" : ""} 
+          />
         </div>
 
         <div className="md:col-span-2 space-y-2">
           <Label>Service Provider Address</Label>
-          <Input value={data.service_provider_address || ''} disabled className="bg-slate-50" />
+          <Input 
+            value={data.service_provider_address || ''} 
+            onChange={(e) => handleChange('service_provider_address', e.target.value)}
+            disabled={isReadOnly} 
+            className={isReadOnly ? "bg-slate-50" : ""} 
+          />
         </div>
 
         <div className="space-y-2">
           <Label>Customer Legal Name</Label>
-          <Input value={data.customer_name || ''} disabled className="bg-slate-50" />
+          <Input 
+            value={data.customer_name || ''} 
+            onChange={(e) => handleChange('customer_name', e.target.value)}
+            disabled={isReadOnly} 
+            className={isReadOnly ? "bg-slate-50" : ""} 
+          />
         </div>
 
         <div className="space-y-2">
           <Label>Job Location</Label>
-          <Input value={data.job_location || ''} disabled className="bg-slate-50" />
+          <Input 
+            value={data.job_location || ''} 
+            onChange={(e) => handleChange('job_location', e.target.value)}
+            disabled={isReadOnly} 
+            className={isReadOnly ? "bg-slate-50" : ""} 
+          />
         </div>
 
         <div className="space-y-2">
@@ -53,14 +78,20 @@ export default function AffidavitDetailsSection({ data, onChange, isReadOnly }) 
           <Input
             type="date"
             value={data.job_completion_date || ''}
-            disabled
-            className="bg-slate-50"
+            onChange={(e) => handleChange('job_completion_date', e.target.value)}
+            disabled={isReadOnly}
+            className={isReadOnly ? "bg-slate-50" : ""}
           />
         </div>
 
         <div className="space-y-2">
           <Label>Destruction Method</Label>
-          <Input value={data.destruction_method || ''} disabled className="bg-slate-50" />
+          <Input 
+            value={data.destruction_method || ''} 
+            onChange={(e) => handleChange('destruction_method', e.target.value)}
+            disabled={isReadOnly} 
+            className={isReadOnly ? "bg-slate-50" : ""} 
+          />
         </div>
 
         <div className="md:col-span-2 space-y-2">

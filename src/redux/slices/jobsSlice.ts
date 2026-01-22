@@ -1,5 +1,17 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 
+export interface Material {
+  _id?: string;
+  material_type: 'alcoholic_beverages' | 'non_alcoholic_beverages' | 'food_products' | 'pharmaceuticals' | 'consumer_goods' | 'packaging_materials' | 'hazardous_materials' | 'other';
+  packaging_type: 'aluminum_cans' | 'plastic_bottles' | 'glass_bottles' | 'tetra_pak' | 'kegs' | 'drums' | 'pallets' | 'bulk' | 'mixed_packaging' | 'other';
+  quantity: number;
+  unit_of_measure: 'cases' | 'pallets' | 'pounds' | 'kilograms' | 'gallons' | 'liters' | 'units' | 'tons';
+  container_type?: string;
+  final_disposition: 'landfill' | 'recycling' | 'composting' | 'incineration' | 'waste_to_energy' | 'reprocessing' | 'scrap_metal' | 'other';
+  description?: string;
+  sort_order?: number;
+}
+
 export interface Job {
   _id?: string;
   job_id: string;
@@ -16,6 +28,7 @@ export interface Job {
   destruction_description: string;
   requires_affidavit: boolean;
   special_handling_notes: string;
+  materials?: Material[];
   job_status: 'scheduled' | 'in_progress' | 'completed' | 'archived';
   createdAt?: string;
   updatedAt?: string;

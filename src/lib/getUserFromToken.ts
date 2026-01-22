@@ -1,18 +1,19 @@
-import { verifyToken } from './auth';
+import { getUserFromRequest } from './auth';
 import { connectDB } from './mongodb';
 import { ObjectId } from 'mongodb';
+import { NextRequest } from 'next/server';
 
-export async function getUserFromToken(token: string) {
+export async function getUserFromToken(request: NextRequest) {
   try {
-    const payload = verifyToken(token) as any;
-    if (!payload) {
+    const { userId } = getUserFromRequest(request);
+    if (!userId) {
       return null;
     }
 
     const db = await connectDB();
     const users = db.collection('users');
     
-    const user = await users.findOne({ _id: new ObjectId(payload.userId) });
+    const user = await users.findOne({ _id: new ObjectId(userId) });
     if (!user) {
       return null;
     }

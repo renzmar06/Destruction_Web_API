@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Eye, FileText, Image, Search } from "lucide-react";
+import { Eye, FileText, Image, Search, Edit, RefreshCw } from "lucide-react";
 import { motion } from "framer-motion";
 import { format } from "date-fns";
 
@@ -14,7 +14,7 @@ const statusConfig = {
   completed: { label: 'Completed', className: 'bg-green-100 text-green-700 border-green-200' }
 };
 
-export default function JobList({ jobs, customers, onView, onGenerateInvoice, onGenerateAffidavit, isLoading }) {
+export default function JobList({ jobs, customers, onView, onEdit, onDelete, onStatusChange, onGenerateInvoice, onGenerateAffidavit, isLoading }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [customerFilter, setCustomerFilter] = useState('all');
@@ -111,7 +111,8 @@ export default function JobList({ jobs, customers, onView, onGenerateInvoice, on
                   key={job.id}
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
-                  className="border-b border-slate-100 hover:bg-slate-50 transition-colors"
+                  className="border-b border-slate-100 hover:bg-slate-50 transition-colors cursor-pointer"
+                  onClick={() => onView(job)}
                 >
                   <TableCell className="font-medium text-slate-900">{job.job_id}</TableCell>
                   <TableCell className="text-slate-700">{job.job_name}</TableCell>
@@ -128,7 +129,7 @@ export default function JobList({ jobs, customers, onView, onGenerateInvoice, on
                     {job.actual_completion_date ? format(new Date(job.actual_completion_date), 'MMM d, yyyy') : '-'}
                   </TableCell>
                   <TableCell className="text-right">
-                    <div className="flex items-center justify-end gap-2">
+                    <div className="flex items-center justify-end gap-2" onClick={(e) => e.stopPropagation()}>
                       <Button
                         variant="ghost"
                         size="sm"
@@ -137,6 +138,24 @@ export default function JobList({ jobs, customers, onView, onGenerateInvoice, on
                       >
                         <Eye className="w-4 h-4" />
                         View
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => onEdit && onEdit(job)}
+                        className="h-8 gap-2 text-blue-600 hover:text-blue-700"
+                      >
+                        <Edit className="w-4 h-4" />
+                        Edit
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => onStatusChange && onStatusChange(job)}
+                        className="h-8 gap-2 text-orange-600 hover:text-orange-700"
+                      >
+                        <RefreshCw className="w-4 h-4" />
+                        Status
                       </Button>
                       {job.job_status === 'completed' && (
                         <>

@@ -11,7 +11,7 @@ export default function VendorJobAssociations({ vendor, expenses, jobs }) {
     .reduce((acc, expense) => {
       const jobId = expense.job_id;
       if (!acc[jobId]) {
-        const job = jobs.find(j => j.id === jobId);
+        const job = jobs.find(j => j._id === jobId);
         acc[jobId] = {
           job_id: jobId,
           job_reference: expense.job_reference || job?.job_id,

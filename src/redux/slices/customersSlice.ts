@@ -71,7 +71,8 @@ const initialState: CustomersState = {
 export const fetchCustomers = createAsyncThunk('customers/fetchCustomers', async () => {
   const response = await fetch('/api/customers');
   if (!response.ok) throw new Error('Failed to fetch customers');
-  return response.json();
+  const result = await response.json();
+  return result.data || [];
 });
 
 export const createCustomer = createAsyncThunk('customers/createCustomer', async (customer: Omit<Customer, '_id' | 'id'>) => {
@@ -81,7 +82,8 @@ export const createCustomer = createAsyncThunk('customers/createCustomer', async
     body: JSON.stringify(customer),
   });
   if (!response.ok) throw new Error('Failed to create customer');
-  return response.json();
+  const result = await response.json();
+  return result.data;
 });
 
 export const updateCustomer = createAsyncThunk('customers/updateCustomer', async ({ id, customer }: { id: string; customer: Partial<Customer> }) => {
@@ -91,7 +93,8 @@ export const updateCustomer = createAsyncThunk('customers/updateCustomer', async
     body: JSON.stringify(customer),
   });
   if (!response.ok) throw new Error('Failed to update customer');
-  return response.json();
+  const result = await response.json();
+  return result.data;
 });
 
 export const deleteCustomer = createAsyncThunk('customers/deleteCustomer', async (id: string) => {

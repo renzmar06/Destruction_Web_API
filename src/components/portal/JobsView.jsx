@@ -1,6 +1,4 @@
 import React from 'react';
-import { base44 } from "@/api/base44Client";
-import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Briefcase, Calendar, MapPin, CheckCircle } from "lucide-react";
@@ -14,11 +12,9 @@ const statusConfig = {
   archived: { label: 'Archived', className: 'bg-slate-100 text-slate-600' }
 };
 
-export default function JobsView({ customerId }) {
-  const { data: jobs = [], isLoading } = useQuery({
-    queryKey: ['customerJobs', customerId],
-    queryFn: () => base44.entities.Job.filter({ customer_id: customerId }, '-created_date')
-  });
+export default function JobsView({ customerId, selectedJob, onBack }) {
+  const jobs = selectedJob ? [selectedJob] : [];
+  const isLoading = false;
 
   if (isLoading) {
     return <div className="text-center py-12 text-slate-500">Loading jobs...</div>;
@@ -40,7 +36,7 @@ export default function JobsView({ customerId }) {
     <div className="space-y-4">
       {jobs.map((job) => (
         <motion.div
-          key={job.id}
+          key={job._id || job.id}
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
         >
@@ -61,7 +57,7 @@ export default function JobsView({ customerId }) {
               <div className="space-y-3">
                 <div className="flex items-center gap-2 text-sm text-slate-600">
                   <Calendar className="w-4 h-4" />
-                  <span>Scheduled: {format(new Date(job.scheduled_date), 'MMMM d, yyyy')}</span>
+                  <span>Scheduled: {job.scheduled_date ? format(new Date(job.scheduled_date), 'MMMM d, yyyy') : 'Not scheduled'}</span>
                 </div>
 
                 {job.actual_start_date && (

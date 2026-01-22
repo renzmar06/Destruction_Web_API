@@ -34,36 +34,42 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = async (email: string, password: string): Promise<boolean> => {
     try {
+      console.log('🔄 Login attempt started');
+      
       const response = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({ email, password })
       });
 
       const data = await response.json();
+      console.log('📡 API Response:', data);
 
       if (data.success) {
-        localStorage.setItem('token', data.token);
-        localStorage.setItem('user', JSON.stringify(data.user));
+        console.log('✅ Login API success');
         
-        // Set token in cookie for middleware
-        document.cookie = `token=${data.token}; path=/; max-age=86400`;
+        // Store token if provided
+        if (data.token) {
+          localStorage.setItem('token', data.token);
+          console.log('💾 Token stored:', localStorage.getItem('token'));
+        }
         
+        // Update auth state
         setUser(data.user);
+        console.log('👤 User state updated:', data.user);
         
-        // Redirect based on user role
-        setTimeout(() => {
-          if (data.user.role === 'customer') {
-            window.location.href = '/CustomerDashboard';
-          } else {
-            window.location.href = '/dashboard';
-          }
-        }, 100);
+        // Force redirect
+        console.log('🔄 Attempting redirect...');
+        window.location.href = data.user.role === 'customer' ? '/CustomerDashboard' : '/dashboard';
         
         return true;
       }
+      
+      console.log('❌ Login failed:', data.message);
       return false;
     } catch (error) {
+      console.error('Login error:', error);
       return false;
     }
   };

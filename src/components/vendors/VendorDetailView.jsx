@@ -1,6 +1,4 @@
 import React, { useState } from 'react';
-import { useQuery } from "@tanstack/react-query";
-import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
@@ -15,34 +13,28 @@ import {
   TrendingUp,
   Package
 } from "lucide-react";
-import VendorExpenseHistory from "./VendorExpenseHistory";
-import VendorPurchaseOrders from "./VendorPurchaseOrders";
-import VendorJobAssociations from "./VendorJobAssociations";
-import VendorPerformanceReport from "./VendorPerformanceReport";
 
-export default function VendorDetailView({ vendor, onClose, onEdit }) {
+export default function VendorDetailView({ 
+  vendor, 
+  expenses, 
+  onClose, 
+  onEdit,
+  VendorExpenseHistory,
+  VendorJobAssociations,
+  VendorPerformanceReport,
+  VendorPurchaseOrders
+}) {
   const [activeTab, setActiveTab] = useState('expenses');
 
-  const { data: expenses = [] } = useQuery({
-    queryKey: ['vendorExpenses', vendor.id],
-    queryFn: () => base44.entities.Expense.filter({ vendor_id: vendor.id }, '-expense_date')
-  });
-
-  const { data: allExpenses = [] } = useQuery({
-    queryKey: ['expenses'],
-    queryFn: () => base44.entities.Expense.list()
-  });
-
-  const { data: jobs = [] } = useQuery({
-    queryKey: ['jobs'],
-    queryFn: () => base44.entities.Job.list()
-  });
+  // Filter expenses for this vendor
+  const vendorExpenses = (expenses || []).filter(e => e.vendor_id === vendor._id);
+  const jobs = []; // Mock data for now
 
   // Calculate stats
-  const totalSpent = expenses.reduce((sum, e) => sum + (e.amount || 0), 0);
-  const paidAmount = expenses.filter(e => e.payment_status === 'paid').reduce((sum, e) => sum + (e.amount || 0), 0);
-  const pendingAmount = expenses.filter(e => ['pending', 'scheduled'].includes(e.payment_status)).reduce((sum, e) => sum + (e.amount || 0), 0);
-  const poCount = expenses.filter(e => e.po_number).length;
+  const totalSpent = vendorExpenses.reduce((sum, e) => sum + (e.amount || 0), 0);
+  const paidAmount = vendorExpenses.filter(e => e.payment_status === 'paid').reduce((sum, e) => sum + (e.amount || 0), 0);
+  const pendingAmount = vendorExpenses.filter(e => ['pending', 'scheduled'].includes(e.payment_status)).reduce((sum, e) => sum + (e.amount || 0), 0);
+  const poCount = vendorExpenses.filter(e => e.po_number).length;
 
   const statusConfig = {
     active: { label: 'Active', class: 'bg-green-100 text-green-700' },
@@ -167,7 +159,7 @@ export default function VendorDetailView({ vendor, onClose, onEdit }) {
                 </div>
               </div>
               <div className="text-xs text-slate-600">
-                {expenses.length} transactions • {poCount} POs
+                {vendorExpenses.length} transactions • {poCount} POs
               </div>
             </div>
           </div>
@@ -195,19 +187,43 @@ export default function VendorDetailView({ vendor, onClose, onEdit }) {
           </TabsList>
 
           <TabsContent value="expenses" className="mt-0">
-            <VendorExpenseHistory vendor={vendor} expenses={expenses} />
+            {VendorExpenseHistory ? (
+              <VendorExpenseHistory vendor={vendor} expenses={vendorExpenses} />
+            ) : (
+              <div className="bg-white rounded-lg border border-slate-200 p-6">
+                <p className="text-slate-500">No expenses found for this vendor.</p>
+              </div>
+            )}
           </TabsContent>
 
           <TabsContent value="purchase-orders" className="mt-0">
-            <VendorPurchaseOrders vendor={vendor} expenses={expenses} />
+            {VendorPurchaseOrders ? (
+              <VendorPurchaseOrders vendor={vendor} expenses={vendorExpenses} />
+            ) : (
+              <div className="bg-white rounded-lg border border-slate-200 p-6">
+                <p className="text-slate-500">No purchase orders found for this vendor.</p>
+              </div>
+            )}
           </TabsContent>
 
           <TabsContent value="jobs" className="mt-0">
-            <VendorJobAssociations vendor={vendor} expenses={expenses} jobs={jobs} />
+            {VendorJobAssociations ? (
+              <VendorJobAssociations vendor={vendor} expenses={vendorExpenses} jobs={jobs} />
+            ) : (
+              <div className="bg-white rounded-lg border border-slate-200 p-6">
+                <p className="text-slate-500">No job associations found for this vendor.</p>
+              </div>
+            )}
           </TabsContent>
 
           <TabsContent value="performance" className="mt-0">
-            <VendorPerformanceReport vendor={vendor} expenses={allExpenses} />
+            {VendorPerformanceReport ? (
+              <VendorPerformanceReport vendor={vendor} expenses={vendorExpenses} />
+            ) : (
+              <div className="bg-white rounded-lg border border-slate-200 p-6">
+                <p className="text-slate-500">Performance report will be available once expenses are tracked.</p>
+              </div>
+            )}
           </TabsContent>
         </Tabs>
       </div>

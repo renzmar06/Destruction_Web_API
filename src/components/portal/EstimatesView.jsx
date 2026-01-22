@@ -1,6 +1,4 @@
 import React, { useState } from 'react';
-import { base44 } from "@/api/base44Client";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -15,54 +13,16 @@ const statusConfig = {
   expired: { label: 'Expired', className: 'bg-red-100 text-red-700' }
 };
 
-export default function EstimatesView({ customerId }) {
-  const [selectedEstimate, setSelectedEstimate] = useState(null);
-  const queryClient = useQueryClient();
-
-  const { data: estimates = [], isLoading } = useQuery({
-    queryKey: ['customerEstimates', customerId],
-    queryFn: () => base44.entities.Estimate.filter({ customer_id: customerId }, '-created_date')
-  });
-
-  const { data: lineItems = [] } = useQuery({
-    queryKey: ['estimateLineItems', selectedEstimate?.id],
-    queryFn: () => selectedEstimate ? base44.entities.EstimateLineItem.filter({ estimate_id: selectedEstimate.id }, 'sort_order') : [],
-    enabled: !!selectedEstimate
-  });
-
-  const { data: additionalCharges = [] } = useQuery({
-    queryKey: ['estimateCharges', selectedEstimate?.id],
-    queryFn: () => selectedEstimate ? base44.entities.EstimateAdditionalCharge.filter({ estimate_id: selectedEstimate.id }, 'sort_order') : [],
-    enabled: !!selectedEstimate
-  });
-
-  const acceptMutation = useMutation({
-    mutationFn: async (estimate) => {
-      const response = await base44.functions.invoke('acceptEstimate', { 
-        estimate_id: estimate.id 
-      });
-      return response.data;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['customerEstimates', customerId] });
-      queryClient.invalidateQueries({ queryKey: ['customerJobs', customerId] });
-      alert('Estimate accepted successfully! A job has been created and we will contact you to schedule the work.');
-      setSelectedEstimate(null);
-    }
-  });
-
-  // Track estimate view when customer opens detailed view
-  React.useEffect(() => {
-    if (selectedEstimate) {
-      base44.functions.invoke('trackEstimateView', { 
-        estimate_id: selectedEstimate.id 
-      }).catch(err => console.error('Failed to track view:', err));
-    }
-  }, [selectedEstimate]);
+export default function EstimatesView({ customerId, selectedEstimate, onBack }) {
+  // Mock data for now
+  const estimates = selectedEstimate ? [selectedEstimate] : [];
+  const lineItems = [];
+  const additionalCharges = [];
+  const isLoading = false;
 
   const handleAccept = (estimate) => {
     if (confirm(`Accept estimate ${estimate.estimate_number}? This will initiate the job scheduling process.`)) {
-      acceptMutation.mutate(estimate);
+      alert('Accept functionality not yet implemented');
     }
   };
 
@@ -77,7 +37,7 @@ export default function EstimatesView({ customerId }) {
         animate={{ opacity: 1, y: 0 }}
         className="space-y-6"
       >
-        <Button variant="outline" onClick={() => setSelectedEstimate(null)}>
+        <Button variant="outline" onClick={onBack}>
           ← Back to Estimates
         </Button>
 

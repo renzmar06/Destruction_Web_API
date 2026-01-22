@@ -40,7 +40,7 @@ const statusConfig = {
   cancelled: { label: 'Cancelled', class: 'text-gray-700', icon: null }
 };
 
-export default function EstimateList({ estimates, customers, onView, onDelete, onSend, onAccept, onConvert, isLoading }) {
+export default function EstimateList({ estimates, customers, onView, onEdit, onDelete, onSend, onAccept, onConvert, isLoading, onShowToast }) {
   const [statusFilter, setStatusFilter] = useState('all');
   const [dateFilter, setDateFilter] = useState('last_12');
   const [selectedEstimates, setSelectedEstimates] = useState([]);
@@ -122,8 +122,12 @@ export default function EstimateList({ estimates, customers, onView, onDelete, o
   };
 
   const handleSendClick = (estimate) => {
+    // Find customer email from customers array
+    const customer = customers.find(c => c._id === estimate.customer_id || c.id === estimate.customer_id);
+    const customerEmail = customer?.email || customer?.primary_email || estimate.customer_email || '';
+    
     setSelectedEstimate(estimate);
-    setSendEmail(estimate.customer_email || '');
+    setSendEmail(customerEmail);
     setSendPhone('');
     setSendMethod('email');
     setSendDialogOpen(true);
@@ -145,14 +149,14 @@ export default function EstimateList({ estimates, customers, onView, onDelete, o
         const result = await response.json();
         
         if (result.success) {
-          alert('Estimate sent successfully!');
+          onShowToast && onShowToast('Estimate sent successfully!');
           // Refresh estimates to show updated status
           window.location.reload();
         } else {
-          alert('Failed to send estimate: ' + result.error);
+          onShowToast && onShowToast('Failed to send estimate: ' + result.error, true);
         }
       } catch (error) {
-        alert('Failed to send estimate: ' + error.message);
+        onShowToast && onShowToast('Failed to send estimate: ' + error.message, true);
       }
       setSendDialogOpen(false);
     } else if (sendMethod === 'sms' && sendPhone) {
@@ -231,7 +235,7 @@ export default function EstimateList({ estimates, customers, onView, onDelete, o
   const handleSidebarEdit = () => {
     setSidebarOpen(false);
     if (sidebarEstimate) {
-      onView(sidebarEstimate);
+      onEdit ? onEdit(sidebarEstimate) : onView(sidebarEstimate);
     }
   };
 
@@ -584,7 +588,16 @@ export default function EstimateList({ estimates, customers, onView, onDelete, o
                           onClick={() => onView(estimate)}
                           className="text-blue-600 hover:text-blue-700 h-auto p-0 text-sm font-normal"
                         >
-                          View/Edit
+                          View
+                        </Button>
+                        <span className="text-slate-400">|</span>
+                        <Button
+                          variant="link"
+                          size="sm"
+                          onClick={() => onEdit ? onEdit(estimate) : onView(estimate)}
+                          className="text-blue-600 hover:text-blue-700 h-auto p-0 text-sm font-normal"
+                        >
+                          Edit
                         </Button>
                         <span className="text-slate-400">|</span>
                         <Button
@@ -604,7 +617,10 @@ export default function EstimateList({ estimates, customers, onView, onDelete, o
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end" className="w-56">
                             <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onView(estimate); }}>
-                              View/Edit
+                              View
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onEdit ? onEdit(estimate) : onView(estimate); }}>
+                              Edit
                             </DropdownMenuItem>
                             <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleSendClick(estimate); }}>
                               <Mail className="w-4 h-4 mr-2" />

@@ -29,10 +29,24 @@ const pricingUnitLabels = {
   flat_fee: 'Flat Fee'
 };
 
-export default function ServiceList({ services, onView, onDeactivate, onReactivate, isLoading }) {
+export default function ServiceList({ services, onView, onDeactivate, onReactivate, isLoading, onClearFilters }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [categoryFilter, setCategoryFilter] = useState('all');
+
+  // Clear filters function
+  const clearAllFilters = () => {
+    setSearchTerm('');
+    setStatusFilter('all');
+    setCategoryFilter('all');
+  };
+
+  // Expose clear function to parent
+  React.useEffect(() => {
+    if (onClearFilters) {
+      onClearFilters(clearAllFilters);
+    }
+  }, [onClearFilters]);
 
   const filteredServices = services.filter(service => {
     const matchesSearch = service.service_name?.toLowerCase().includes(searchTerm.toLowerCase());

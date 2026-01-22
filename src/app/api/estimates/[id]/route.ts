@@ -21,13 +21,40 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     await connectDB();
     const { id } = await params;
     const body = await request.json();
+    
+    // Don't update estimate_number if it's empty
+    if (body.estimate_number === '') {
+      delete body.estimate_number;
+    }
+    
+    // Convert date strings to Date objects
+    if (body.estimate_date) {
+      body.estimate_date = new Date(body.estimate_date);
+    }
+    if (body.valid_until_date) {
+      body.valid_until_date = new Date(body.valid_until_date);
+    }
+    
     const estimate = await Estimate.findByIdAndUpdate(id, body, { new: true });
     if (!estimate) {
-      return NextResponse.json({ success: false, error: 'Estimate not found' }, { status: 404 });
+      return NextResponse.json({ 
+        success: false, 
+        message: 'Estimate not found',
+        data: null 
+      }, { status: 404 });
     }
-    return NextResponse.json({ success: true, data: estimate });
+    return NextResponse.json({ 
+      success: true, 
+      message: 'Estimate updated successfully',
+      data: estimate 
+    });
   } catch (error) {
-    return NextResponse.json({ success: false, error: 'Failed to update estimate' }, { status: 500 });
+    console.error('Error updating estimate:', error);
+    return NextResponse.json({ 
+      success: false, 
+      message: 'Failed to update estimate',
+      data: null 
+    }, { status: 500 });
   }
 }
 

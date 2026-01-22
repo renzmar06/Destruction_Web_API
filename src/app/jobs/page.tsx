@@ -16,6 +16,7 @@ import DestructionDetailsSection from "@/components/jobs/DestructionDetailsSecti
 import JobStatusSection from "@/components/jobs/JobStatusSection";
 import LinkedRecordsSection from "@/components/jobs/LinkedRecordsSection";
 import JobMaterialsSection from "@/components/jobs/JobMaterialsSection";
+import JobsView from "@/components/portal/JobsView";
 
 /* ======================================================
    TYPES
@@ -55,6 +56,7 @@ export default function JobsPage() {
   const [showForm, setShowForm] = useState(false);
   const [showEstimateSelector, setShowEstimateSelector] = useState(false);
   const [editingJob, setEditingJob] = useState<Job | null>(null);
+  const [selectedJobForView, setSelectedJobForView] = useState<Job | null>(null);
   const [showSuccess, setShowSuccess] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
 
@@ -87,6 +89,7 @@ export default function JobsPage() {
     destruction_description: "",
     requires_affidavit: false,
     special_handling_notes: "",
+    materials: [],
     job_status: "scheduled",
   });
 
@@ -132,6 +135,7 @@ export default function JobsPage() {
       requires_affidavit: customer?.requires_affidavit || false,
       special_handling_notes:
         estimate.what_is_included || customer?.special_handling_notes || "",
+      materials: [],
       job_status: "scheduled",
     });
 
@@ -140,9 +144,40 @@ export default function JobsPage() {
   };
 
   const handleView = (job: Job): void => {
+    setSelectedJobForView(job);
+  };
+
+  const handleEdit = (job: Job): void => {
     setEditingJob(job);
     setFormData(job);
     setShowForm(true);
+  };
+
+  const handleStatusChange = async (job: Job): Promise<void> => {
+    const statusFlow = {
+      'scheduled': 'in_progress',
+      'in_progress': 'completed',
+      'completed': 'completed' // Already completed
+    };
+    
+    const nextStatus = statusFlow[job.job_status as keyof typeof statusFlow];
+    
+    if (nextStatus === job.job_status) {
+      showSuccessToast(`Job is already ${job.job_status}.`);
+      return;
+    }
+    
+    try {
+      const updatedJob = { ...job, job_status: nextStatus as 'scheduled' | 'in_progress' | 'completed' };
+      await dispatch(updateJob({ id: job._id!, ...updatedJob })).unwrap();
+      showSuccessToast(`Job status changed from ${job.job_status} to ${nextStatus}.`);
+    } catch (error: unknown) {
+      console.error('Status update error:', error);
+      const errorMessage = error instanceof Error ? error.message : 
+        (typeof error === 'object' && error !== null && 'message' in error) ? 
+        (error as any).message : 'Failed to update status';
+      alert(`Error updating status: ${errorMessage}`);
+    }
   };
 
   const handleSave = async (): Promise<void> => {
@@ -156,8 +191,12 @@ export default function JobsPage() {
       }
       setShowForm(false);
       setEditingJob(null);
-    } catch (error) {
-      alert(`Error: ${error}`);
+    } catch (error: unknown) {
+      console.error('Save error:', error);
+      const errorMessage = error instanceof Error ? error.message : 
+        (typeof error === 'object' && error !== null && 'message' in error) ? 
+        (error as any).message : 'Failed to save job';
+      alert(`Error: ${errorMessage}`);
     }
   };
 
@@ -166,8 +205,12 @@ export default function JobsPage() {
       try {
         await dispatch(deleteJob(jobId)).unwrap();
         showSuccessToast("Job deleted successfully.");
-      } catch (error) {
-        alert(`Error: ${error}`);
+      } catch (error: unknown) {
+        console.error('Delete error:', error);
+        const errorMessage = error instanceof Error ? error.message : 
+          (typeof error === 'object' && error !== null && 'message' in error) ? 
+          (error as any).message : 'Failed to delete job';
+        alert(`Error: ${errorMessage}`);
       }
     }
   };
@@ -175,7 +218,37 @@ export default function JobsPage() {
   const handleCancel = (): void => {
     setShowForm(false);
     setShowEstimateSelector(false);
+    setSelectedJobForView(null);
     setEditingJob(null);
+  };
+
+  const handleGenerateInvoice = async (job: Job): Promise<void> => {
+    try {
+      const response = await fetch('/api/invoices/generate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          jobId: job._id,
+          customerId: job.customer_id,
+          estimateId: job.estimate_id
+        }),
+      });
+      
+      const result = await response.json();
+      
+      if (result.success) {
+        showSuccessToast('Invoice generated successfully!');
+        // Remove the redirect - just show toast
+      } else {
+        alert('Failed to generate invoice: ' + result.message);
+      }
+    } catch (error: unknown) {
+      console.error('Invoice generation error:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to generate invoice';
+      alert(`Error: ${errorMessage}`);
+    }
   };
 
   const handlePrintPreview = (): void => {
@@ -215,7 +288,26 @@ export default function JobsPage() {
         </div>
 
         <AnimatePresence mode="wait">
-          {showEstimateSelector ? (
+          {selectedJobForView ? (
+            <motion.div
+              key="job-view"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+            >
+              <button
+                onClick={() => setSelectedJobForView(null)}
+                className="mb-4 px-4 py-2 text-slate-600 hover:text-slate-900 flex items-center gap-2"
+              >
+                ← Back to Jobs
+              </button>
+              <JobsView 
+                customerId={selectedJobForView.customer_id}
+                selectedJob={selectedJobForView}
+                onBack={() => setSelectedJobForView(null)}
+              />
+            </motion.div>
+          ) : showEstimateSelector ? (
             <motion.div
               key="selector"
               initial={{ opacity: 0, y: 20 }}
@@ -256,6 +348,20 @@ export default function JobsPage() {
               exit={{ opacity: 0, y: -20 }}
               className="space-y-6 pb-32"
             >
+              {/* Form Header with Cancel */}
+              <div className="bg-white rounded-2xl border p-6 flex items-center justify-between">
+                <div>
+                  <h2 className="text-xl font-semibold text-slate-900">
+                    {editingJob ? "Edit Job" : "Create Job"}
+                  </h2>
+                  <p className="text-sm text-slate-500 mt-1">
+                    {editingJob ? "Update job information" : "Create a new job from estimate"}
+                  </p>
+                </div>
+                <button onClick={handleCancel} className="p-2 hover:bg-slate-100 rounded-md transition-colors">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
               <JobDetailsSection
                 data={formData}
                 onChange={setFormData}
@@ -284,11 +390,16 @@ export default function JobsPage() {
                 canChangeStatus={!!editingJob}
               />
 
+              <JobMaterialsSection 
+                jobId={editingJob?._id || 'new'} 
+                jobData={formData}
+                onJobUpdate={() => dispatch(fetchJobs())}
+                onMaterialsChange={(materials: any) => setFormData(prev => ({ ...prev, materials }))}
+                isReadOnly={false} 
+              />
+
               {editingJob && (
-                <>
-                  <JobMaterialsSection jobId={editingJob._id} isReadOnly={false} />
-                  <LinkedRecordsSection job={formData} />
-                </>
+                <LinkedRecordsSection job={formData} />
               )}
 
               <div className="fixed bottom-0 left-0 right-0 bg-white border-t shadow-lg">
@@ -313,10 +424,13 @@ export default function JobsPage() {
           ) : (
             <JobList
               jobs={jobs}
-              customers={customers}
+              customers={Array.isArray(customers) ? customers : []}
               isLoading={isLoading}
               onView={handleView}
-              onGenerateInvoice={() => {}}
+              onEdit={handleEdit}
+              onStatusChange={handleStatusChange}
+              onDelete={handleDelete}
+              onGenerateInvoice={handleGenerateInvoice}
               onGenerateAffidavit={() => {}}
             />
           )}

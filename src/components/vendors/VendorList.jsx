@@ -126,13 +126,14 @@ export default function VendorList({ vendors, expenses, onView, onArchive, isLoa
           </TableRow>
         ) : (
           vendorList.map((vendor) => {
-            const totalSpending = getVendorSpending(vendor.id);
+            const totalSpending = getVendorSpending(vendor._id);
             return (
               <motion.tr
-                key={vendor.id}
+                key={vendor._id}
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                className="border-b border-slate-100 hover:bg-slate-50 transition-colors"
+                className="border-b border-slate-100 hover:bg-slate-50 transition-colors cursor-pointer"
+                onClick={() => onView(vendor)}
               >
                 <TableCell>
                   <div>
@@ -169,7 +170,10 @@ export default function VendorList({ vendors, expenses, onView, onArchive, isLoa
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => onView(vendor)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onView(vendor);
+                      }}
                       className="h-8 gap-2"
                     >
                       <Eye className="w-4 h-4" />
@@ -179,7 +183,10 @@ export default function VendorList({ vendors, expenses, onView, onArchive, isLoa
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => onArchive(vendor)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onArchive(vendor);
+                        }}
                         className="h-8 gap-2 text-slate-600"
                       >
                         <Archive className="w-4 h-4" />
