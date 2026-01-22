@@ -15,10 +15,17 @@ const statusConfig = {
   archived: { label: 'Archived', className: 'bg-slate-100 text-slate-600' }
 };
 
-export default function JobsView({ customerId, selectedJob, onBack }) {
-  const jobs = selectedJob ? [selectedJob] : [];
-  const isLoading = false;
-  const customerJobs = jobs.filter(job => job.customer_id === customerId);
+export default function JobsView({ userId=null }) {
+
+  const { jobs, loading } = useAppSelector(state => state.jobs);
+  
+  const customerJobs = jobs.filter(job => {
+    if (userId === null) {
+      return true; // Show all jobs if userId is null
+    }
+    return job.user_id === userId;
+  });
+  const isLoading = loading;
   if (isLoading) {
     return <div className="text-center py-12 text-slate-500">Loading jobs...</div>;
   }

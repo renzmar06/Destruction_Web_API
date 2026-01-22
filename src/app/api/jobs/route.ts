@@ -57,7 +57,7 @@ export async function POST(request: NextRequest) {
     const job = new Job({
       ...jobData,
       job_id: jobId,
-      user_id: userId
+      user_id: jobData.user_id || userId
     });
     
     await job.save();

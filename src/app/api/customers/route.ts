@@ -50,7 +50,6 @@ export async function POST(request: NextRequest) {
     await connectDB();
     const { userId } = getUserFromRequest(request);
     const data = await request.json();
-    
     // Extract password from customer data
     const { password, ...customerData } = data;
     
@@ -74,11 +73,11 @@ export async function POST(request: NextRequest) {
     });
     
     const savedUser = await user.save();
-    
+    console.log("fgfdgfddfg",savedUser  )
     // Create customer with user_id reference
     const customer = new Customer({
       ...customerData,
-      user_id: userId
+      user_id: savedUser._id
     });
     
     const savedCustomer = await customer.save();

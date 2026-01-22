@@ -18,6 +18,7 @@ export interface Job {
   job_name: string;
   customer_id: string;
   customer_name: string;
+  user_id?: string;
   estimate_id: string;
   estimate_number: string;
   job_location_id: string;

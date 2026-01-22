@@ -13,7 +13,7 @@ export default function CustomerJobs() {
   const { user } = useAppSelector(state => state.auth);
   const { customers, loading: customersLoading } = useAppSelector(state => state.customers);
   const { jobs, loading: jobsLoading } = useAppSelector(state => state.jobs);
-  
+
   const [customer, setCustomer] = useState<any>(null);
   const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(null);
 
@@ -34,6 +34,7 @@ export default function CustomerJobs() {
           setCustomer(customers[0]);
         }
       } else {
+
         // Regular customer/user — match by email
         const matchedCustomer = customers.find(c => c.email === user.email);
         setCustomer(matchedCustomer || null);
@@ -99,7 +100,7 @@ export default function CustomerJobs() {
 
         {/* Content */}
         <JobsView 
-          customerId={customer._id || customer.id} 
+          userId={user.id || customer.id} 
           selectedJob={null}
           onBack={() => {}}
         />
