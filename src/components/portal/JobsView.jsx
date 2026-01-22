@@ -18,7 +18,7 @@ const statusConfig = {
 export default function JobsView({ customerId, selectedJob, onBack }) {
   const jobs = selectedJob ? [selectedJob] : [];
   const isLoading = false;
-  const customerJobs = jobs.filter(job => job.customer_id === customerId);
+  const customerJobs = jobs.filter(job => job.customer_id == customerId);
   if (isLoading) {
     return <div className="text-center py-12 text-slate-500">Loading jobs...</div>;
   }
