@@ -40,6 +40,7 @@ interface Customer {
   legal_company_name?: string;
   requires_affidavit?: boolean;
   special_handling_notes?: string;
+  user_id?: string;
 }
 
 /* ======================================================
@@ -124,7 +125,7 @@ export default function JobsPage() {
       job_name: `Job for ${estimate.customer_name || customer?.legal_company_name || "Customer"}`,
       customer_id: estimate.customer_id,
       customer_name: estimate.customer_name || customer?.legal_company_name || "",
-      user_id: customer?.user_id,
+      user_id: (customer as any)?.user_id,
       estimate_id: estimate._id || '',
       estimate_number: estimate.estimate_number,
       job_location_id: estimate.primary_service_location_id || "",
