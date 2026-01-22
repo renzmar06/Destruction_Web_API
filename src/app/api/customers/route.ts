@@ -50,7 +50,6 @@ export async function POST(request: NextRequest) {
     await connectDB();
     const { userId } = getUserFromRequest(request);
     const data = await request.json();
-    
     // Extract password from customer data
     const { password, ...customerData } = data;
     
