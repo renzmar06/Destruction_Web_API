@@ -4,6 +4,9 @@ import { Badge } from "@/components/ui/badge";
 import { Briefcase, Calendar, MapPin, CheckCircle } from "lucide-react";
 import { format } from "date-fns";
 import { motion } from "framer-motion";
+import { useAppSelector } from '@/redux/hooks';
+
+
 
 const statusConfig = {
   scheduled: { label: 'Scheduled', className: 'bg-blue-100 text-blue-700' },
@@ -20,7 +23,7 @@ export default function JobsView({ customerId, selectedJob, onBack }) {
     return <div className="text-center py-12 text-slate-500">Loading jobs...</div>;
   }
 
-  if (jobs.length === 0) {
+  if (customerJobs.length === 0) {
     return (
       <Card>
         <CardContent className="text-center py-12">
@@ -34,7 +37,7 @@ export default function JobsView({ customerId, selectedJob, onBack }) {
 
   return (
     <div className="space-y-4">
-      {jobs.map((job) => (
+      {customerJobs.map((job) => (
         <motion.div
           key={job._id || job.id}
           initial={{ opacity: 0, y: 20 }}
@@ -77,7 +80,11 @@ export default function JobsView({ customerId, selectedJob, onBack }) {
                 {job.destruction_method && (
                   <div className="bg-slate-50 rounded-lg p-3 text-sm">
                     <p className="font-medium text-slate-900 mb-1">Destruction Method</p>
-                    <p className="text-slate-600">{job.destruction_method.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}</p>
+                    <p className="text-slate-600">
+                      {job.destruction_method
+                        .replace(/_/g, ' ')
+                        .replace(/\b\w/g, l => l.toUpperCase())}
+                    </p>
                   </div>
                 )}
               </div>

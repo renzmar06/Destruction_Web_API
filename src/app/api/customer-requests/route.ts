@@ -6,6 +6,7 @@ import { getUserFromRequest } from '@/lib/auth';
 
 export async function POST(request: NextRequest) {
   try {
+    //test
     await connectDB();
     const { userId } = getUserFromRequest(request);
     

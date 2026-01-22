@@ -8,7 +8,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
   try {
     await connectDB();
     const { id } = await params;
-    const customer = await Customer.findById(id);
+    const customer = await Customer.findById(id).select('-user_id');
     
     if (!customer) {
       return NextResponse.json({ error: 'Customer not found' }, { status: 404 });
