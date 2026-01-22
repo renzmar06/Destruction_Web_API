@@ -7,6 +7,7 @@ interface User {
   email: string;
   phone: string;
   address: string;
+  role?: string;
 }
 
 interface AuthState {
@@ -127,6 +128,25 @@ export const resetPassword = createAsyncThunk(
       return data;
     } catch (error) {
       return rejectWithValue('Password reset failed');
+    }
+  }
+);
+
+export const fetchCurrentUser = createAsyncThunk(
+  'auth/fetchCurrentUser',
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await fetch('/api/auth/me');
+      if (!response.ok) {
+        return rejectWithValue('Failed to fetch user');
+      }
+      const data = await response.json();
+      if (!data.success) {
+        return rejectWithValue(data.message);
+      }
+      return data.user;
+    } catch (error) {
+      return rejectWithValue('Failed to fetch user');
     }
   }
 );
@@ -264,6 +284,13 @@ const authSlice = createSlice({
       .addCase(forgotPassword.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string || 'Failed to send reset link';
+      })
+      // Fetch current user
+      .addCase(fetchCurrentUser.fulfilled, (state, action) => {
+        state.user = action.payload;
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('user', JSON.stringify(action.payload));
+        }
       });
   },
 });
