@@ -7,7 +7,7 @@ import bcrypt from 'bcrypt';
 export async function GET() {
   try {
     await connectDB();
-    const customers = await Customer.find({}).sort({ createdAt: -1 });
+    const customers = await Customer.find({}).select('-user_id').sort({ createdAt: -1 });
     return NextResponse.json(customers);
   } catch (error) {
     console.error('Error fetching customers:', error);

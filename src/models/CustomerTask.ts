@@ -43,6 +43,18 @@ const customerTaskSchema = new mongoose.Schema({
     type: String,
     enum: ['none', 'customer', 'estimate', 'job', 'invoice'],
     default: 'none'
+  },
+  customer: {
+    type: String,
+    default: ''
+  },
+  estimate: {
+    type: String,
+    default: ''
+  },
+  job: {
+    type: String,
+    default: ''
   }
 }, {
   timestamps: true
