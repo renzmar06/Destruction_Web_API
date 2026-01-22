@@ -1,21 +1,48 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { connectDB } from '@/lib/mongodb';
+import User from '@/models/User';
 import { getUserFromRequest } from '@/lib/auth';
 
 export async function GET(request: NextRequest) {
   try {
-    const { userId, userEmail } = getUserFromRequest(request);
+    await connectDB();
+    const { userId } = getUserFromRequest(request);
     
-    return NextResponse.json({
-      success: true,
+    if (!userId) {
+      return NextResponse.json({ 
+        success: false, 
+        message: 'User authentication required',
+        user: null 
+      }, { status: 401 });
+    }
+
+    const user = await User.findById(userId).select('-password');
+    if (!user) {
+      return NextResponse.json({ 
+        success: false, 
+        message: 'User not found',
+        user: null 
+      }, { status: 404 });
+    }
+
+    return NextResponse.json({ 
+      success: true, 
+      message: 'User fetched successfully',
       user: {
-        id: userId,
-        email: userEmail
+        id: user._id,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        email: user.email,
+        phone: user.phone,
+        address: user.address,
+        role: user.role
       }
     });
   } catch (error) {
-    return NextResponse.json(
-      { success: false, message: 'Invalid token or user not found' },
-      { status: 401 }
-    );
+    return NextResponse.json({ 
+      success: false, 
+      message: 'Failed to fetch user',
+      user: null 
+    }, { status: 500 });
   }
 }

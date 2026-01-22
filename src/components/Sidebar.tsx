@@ -1,8 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useSelector, useDispatch } from 'react-redux';
+import { RootState } from '@/redux/store';
+import { loadUserFromStorage, fetchCurrentUser } from '@/redux/slices/authSlice';
 import { 
   ChevronLeft, 
   ChevronRight, 
@@ -19,13 +22,29 @@ import {
   CheckSquare,
   Package,
   Truck,
-  FileCheck
+  FileCheck,
+  User
 } from 'lucide-react';
 
 export default function Sidebar() {
   const [collapsed, setCollapsed] = useState(false);
   const [customerMenuOpen, setCustomerMenuOpen] = useState(false);
   const pathname = usePathname();
+  const dispatch = useDispatch();
+  const { user } = useSelector((state: RootState) => state.auth);
+
+  useEffect(() => {
+    dispatch(loadUserFromStorage());
+    dispatch(fetchCurrentUser());
+  }, [dispatch]);
+
+  // useEffect(() => {
+  //   if (user) {
+  //     alert(`User role: ${user.role || 'No role found'}`);
+  //   }
+  // }, [user]);
+
+  
 
   const navItems = [
     { id: 'dashboard', label: 'Dashboard', icon: Home, href: '/' },
@@ -79,76 +98,83 @@ export default function Sidebar() {
       <nav className="flex-1 py-4 overflow-y-auto">
         <ul className="space-y-1 px-2">
           
-
-          {/* Customer Portal Accordion */}
-          <li>
-            <div
-              className={`flex items-center justify-between w-full px-3 py-2.5 rounded-lg transition-all text-slate-300 hover:bg-slate-800 hover:text-white ${
-                collapsed ? 'justify-center' : ''
-              }`}
-            >
-              <div className="flex items-center gap-3">
-                <Users className="w-5 h-5 flex-shrink-0" />
-                {!collapsed && <span className="text-sm font-medium">Customer Portal</span>}
-              </div>
-              {!collapsed && (
-                <button
-                  onClick={() => setCustomerMenuOpen(!customerMenuOpen)}
-                  className="p-1 hover:bg-slate-700 rounded transition-colors"
-                >
-                  <ChevronDown className={`w-4 h-4 transition-transform ${customerMenuOpen ? 'rotate-180' : ''}`} />
-                </button>
-              )}
-            </div>
-            {customerMenuOpen && !collapsed && (
-              <ul className="ml-4 mt-1 space-y-1">
-                {customerPages.map((subItem) => {
-                  const SubIcon = subItem.icon;
-                  const subActive = isActive(subItem.href);
-                  
-                  return (
-                    <li key={subItem.id}>
-                      <Link
-                        href={subItem.href}
-                        className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-all ${
-                          subActive
-                            ? 'bg-blue-600 text-white'
-                            : 'text-slate-300 hover:bg-slate-800 hover:text-white'
-                        }`}
-                      >
-                        <SubIcon className="w-4 h-4 flex-shrink-0" />
-                        <span className="text-sm font-medium">{subItem.label}</span>
-                      </Link>
-                    </li>
-                  );
-                })}
-              </ul>
-            )}
-          </li>
-          {navItems.map((item) => {
-            const Icon = item.icon;
-            const active = isActive(item.href);
-            
-            return (
-              <li key={item.id}>
-                <Link
-                  href={item.href}
-                  className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all ${
-                    active
-                      ? 'bg-blue-600 text-white'
-                      : 'text-slate-300 hover:bg-slate-800 hover:text-white'
-                  } ${collapsed ? 'justify-center' : ''}`}
-                >
-                  <Icon className="w-5 h-5 flex-shrink-0" />
-                  {!collapsed && (
-                    <span className="text-sm font-medium">{item.label}</span>
-                  )}
-                </Link>
-              </li>
-            );
-          })}
+          {/* Show customer pages directly for customers */}
+          {user?.role === 'customer' ? (
+            customerPages.map((item) => {
+              const Icon = item.icon;
+              const active = isActive(item.href);
+              
+              return (
+                <li key={item.id}>
+                  <Link
+                    href={item.href}
+                    className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all ${
+                      active
+                        ? 'bg-blue-600 text-white'
+                        : 'text-slate-300 hover:bg-slate-800 hover:text-white'
+                    } ${collapsed ? 'justify-center' : ''}`}
+                  >
+                    <Icon className="w-5 h-5 flex-shrink-0" />
+                    {!collapsed && (
+                      <span className="text-sm font-medium">{item.label}</span>
+                    )}
+                  </Link>
+                </li>
+              );
+            })
+          ) : (
+            /* Show admin navigation for non-customers */
+            navItems.map((item) => {
+              const Icon = item.icon;
+              const active = isActive(item.href);
+              
+              return (
+                <li key={item.id}>
+                  <Link
+                    href={item.href}
+                    className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all ${
+                      active
+                        ? 'bg-blue-600 text-white'
+                        : 'text-slate-300 hover:bg-slate-800 hover:text-white'
+                    } ${collapsed ? 'justify-center' : ''}`}
+                  >
+                    <Icon className="w-5 h-5 flex-shrink-0" />
+                    {!collapsed && (
+                      <span className="text-sm font-medium">{item.label}</span>
+                    )}
+                  </Link>
+                </li>
+              );
+            })
+          )}
         </ul>
       </nav>
+
+      {/* User Profile Section */}
+      {user && (
+        <div className="border-t border-slate-800 p-3">
+          <div className={`flex items-center gap-3 px-3 py-2 rounded-lg bg-slate-800 ${
+            collapsed ? 'justify-center' : ''
+          }`}>
+            <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center flex-shrink-0">
+              <User className="w-4 h-4 text-white" />
+            </div>
+            {!collapsed && (
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-white truncate">
+                  {user.firstName} {user.lastName}
+                </p>
+                <p className="text-xs text-slate-400 truncate">
+                  {user.email}
+                </p>
+                <p className="text-xs text-blue-400 font-medium">
+                  {user.role || 'User'}
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Settings (Bottom) */}
       <div className="border-t border-slate-800 p-2">
