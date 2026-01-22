@@ -13,6 +13,7 @@ import { Badge } from '@/components/ui/badge';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 
+
 interface Customer {
   _id?: string;
   id?: string;

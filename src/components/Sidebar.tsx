@@ -28,17 +28,18 @@ export default function Sidebar() {
     { id: 'requests', label: 'Service Requests', icon: ClipboardList, href: '/service-requests' },
     { id: 'estimates', label: 'Estimates', icon: FileText, href: '/estimates' },
     { id: 'jobs', label: 'Jobs', icon: Calendar, href: '/jobs' },
+    { id: 'customer-task', label: 'Task', icon: FileText, href: '/customer-task' },
     { id: 'customers', label: 'Customers', icon: Users, href: '/customers' },
     { id: 'invoices', label: 'Invoices', icon: DollarSign, href: '/invoices' }
+    
   ];
 
   const customerPages = [
     { id: 'customer-dashboard', label: 'Dashboard', icon: Home, href: '/CustomerDashboard' },
     { id: 'customer-requests', label: 'My Requests', icon: ClipboardList, href: '/customer-requests' },
     { id: 'customer-estimates', label: 'My Estimates', icon: FileText, href: '/customer-estimates' },
-    { id: 'customer-task', label: 'Task', icon: FileText, href: '/customer-task' },
-    // { id: 'customer-jobs', label: 'My Jobs', icon: Calendar, href: '/customer-jobs' },
-    // { id: 'customer-invoices', label: 'My Invoices', icon: DollarSign, href: '/customer-invoices' },
+    { id: 'customer-jobs', label: 'My Jobs', icon: Calendar, href: '/customer-jobs' },
+    { id: 'customer-invoices', label: 'My Invoices', icon: DollarSign, href: '/customer-invoices' },
     // { id: 'customer-messages', label: 'Messages', icon: MessageSquare, href: '/customer-messages' }
   ];
 

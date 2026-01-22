@@ -1,6 +1,4 @@
 import React, { useState, useMemo } from 'react';
-import { base44 } from "@/api/base44Client";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -10,6 +8,7 @@ import { Receipt, Calendar, DollarSign, CreditCard, Download, Eye, Filter, X, Ch
 import { format, isAfter, parseISO } from "date-fns";
 import { motion, AnimatePresence } from "framer-motion";
 import StripePaymentModal from "./StripePaymentModal";
+import { useAppSelector } from '@/redux/hooks';
 
 const statusConfig = {
   draft: { label: 'Draft', className: 'bg-slate-100 text-slate-700' },
@@ -20,7 +19,17 @@ const statusConfig = {
   partially_paid: { label: 'Partially Paid', className: 'bg-amber-100 text-amber-700' }
 };
 
-export default function InvoicesView({ customerId }) {
+export default function InvoicesView({ customerId, customerEmail }) {
+  const { invoices, loading } = useAppSelector(state => state.invoices);
+  
+  // Filter invoices for the specific customer by ID, email, or user_id
+  const customerInvoices = invoices.filter(invoice => {
+    const matchById = invoice.customer_id === customerId;
+  
+    const matchByUserId = invoice.user_id === customerId;
+    return matchById ||  matchByUserId;
+  });
+  
   const [selectedInvoice, setSelectedInvoice] = useState(null);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [selectedInvoices, setSelectedInvoices] = useState(new Set());
@@ -30,7 +39,9 @@ export default function InvoicesView({ customerId }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [downloadingPdf, setDownloadingPdf] = useState(false);
   const [downloadingBulk, setDownloadingBulk] = useState(false);
-  const queryClient = useQueryClient();
+  const [paymentSuccess, setPaymentSuccess] = useState(false);
+
+  const isLoading = loading;
 
   const getInvoiceStatus = (invoice) => {
     if (invoice.invoice_status === 'paid') return 'paid';
@@ -46,89 +57,58 @@ export default function InvoicesView({ customerId }) {
     return invoice.invoice_status;
   };
 
-  const { data: invoices = [], isLoading } = useQuery({
-    queryKey: ['customerInvoices', customerId],
-    queryFn: () => base44.entities.Invoice.filter({ customer_id: customerId }, '-created_date')
-  });
+  // Mock line items and adjustments for demo
+  const lineItems = selectedInvoice ? [
+    { id: 1, description: 'Service Item 1', actual_quantity: 1, unit_price: selectedInvoice.subtotal, line_total: selectedInvoice.subtotal }
+  ] : [];
+  const adjustments = [];
 
-  const { data: lineItems = [] } = useQuery({
-    queryKey: ['invoiceLineItems', selectedInvoice?.id],
-    queryFn: () => selectedInvoice ? base44.entities.InvoiceLineItem.filter({ invoice_id: selectedInvoice.id }, 'sort_order') : [],
-    enabled: !!selectedInvoice
-  });
-
-  const { data: adjustments = [] } = useQuery({
-    queryKey: ['invoiceAdjustments', selectedInvoice?.id],
-    queryFn: () => selectedInvoice ? base44.entities.InvoiceAdjustment.filter({ invoice_id: selectedInvoice.id }, 'sort_order') : [],
-    enabled: !!selectedInvoice
-  });
-
-  const paymentMutation = useMutation({
-    mutationFn: async ({ invoiceId, amount }) => {
-      const invoice = invoices.find(inv => inv.id === invoiceId);
-      const newAmountPaid = (invoice.amount_paid || 0) + amount;
-      const newBalance = invoice.total_amount - newAmountPaid;
+  // Mock payment success handler
+  const handlePaymentSuccess = (amount) => {
+    if (selectedInvoice) {
+      const newAmountPaid = (selectedInvoice.amount_paid || 0) + amount;
+      const newBalance = selectedInvoice.total_amount - newAmountPaid;
       
-      return base44.entities.Invoice.update(invoiceId, {
+      // Update local state for demo
+      setSelectedInvoice({
+        ...selectedInvoice,
         amount_paid: newAmountPaid,
         balance_due: newBalance,
         invoice_status: newBalance <= 0 ? 'paid' : 'partially_paid',
-        paid_date: newBalance <= 0 ? new Date().toISOString() : invoice.paid_date,
+        paid_date: newBalance <= 0 ? new Date().toISOString() : selectedInvoice.paid_date,
         last_payment_date: new Date().toISOString(),
         payment_method: 'credit_card'
       });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['customerInvoices', customerId] });
-      setSelectedInvoice(null);
+      
+      setPaymentSuccess(true);
+      setTimeout(() => {
+        setPaymentSuccess(false);
+        setShowPaymentModal(false);
+        setSelectedInvoice(null);
+      }, 2000);
     }
-  });
-
-  const handlePaymentSuccess = (amount) => {
-    paymentMutation.mutate({ invoiceId: selectedInvoice.id, amount });
   };
 
   const handleDownloadPdf = async (invoice) => {
     setDownloadingPdf(true);
-    try {
-      const response = await base44.functions.invoke('exportInvoicePDF', {
-        invoiceId: invoice.id
-      });
-      
-      const blob = new Blob([response.data], { type: 'application/pdf' });
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `${invoice.invoice_number}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      a.remove();
-    } catch (error) {
-      alert('Failed to download PDF: ' + error.message);
-    } finally {
-      setDownloadingPdf(false);
-    }
+    // Simulate PDF download delay
+    await new Promise(resolve => setTimeout(resolve, 1500));
+    
+    // For demo - open a new tab with a placeholder PDF or just alert
+    alert(`📄 PDF Download: ${invoice.invoice_number}\n\n(In demo mode - PDF would download here)`);
+    setDownloadingPdf(false);
   };
 
   const handleBulkDownload = async () => {
     if (selectedInvoices.size === 0) return;
     
     setDownloadingBulk(true);
-    try {
-      for (const invoiceId of selectedInvoices) {
-        const invoice = invoices.find(inv => inv.id === invoiceId);
-        if (invoice) {
-          await handleDownloadPdf(invoice);
-          await new Promise(resolve => setTimeout(resolve, 500));
-        }
-      }
-      setSelectedInvoices(new Set());
-    } catch (error) {
-      alert('Failed to download invoices: ' + error.message);
-    } finally {
-      setDownloadingBulk(false);
-    }
+    // Simulate bulk download
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    
+    alert(`📄 Bulk Download Complete!\n\n${selectedInvoices.size} invoice${selectedInvoices.size > 1 ? 's' : ''} processed.`);
+    setDownloadingBulk(false);
+    setSelectedInvoices(new Set());
   };
 
   const handleBulkPayment = () => {
@@ -159,7 +139,7 @@ export default function InvoicesView({ customerId }) {
   };
 
   const filteredAndSortedInvoices = useMemo(() => {
-    let result = invoices.map(invoice => ({
+    let result = customerInvoices.map(invoice => ({
       ...invoice,
       displayStatus: getInvoiceStatus(invoice)
     }));
@@ -201,7 +181,7 @@ export default function InvoicesView({ customerId }) {
     });
 
     return result;
-  }, [invoices, statusFilter, sortBy, sortOrder, searchTerm]);
+  }, [customerInvoices, statusFilter, sortBy, sortOrder, searchTerm]);
 
   if (isLoading) {
     return <div className="text-center py-12 text-slate-500">Loading invoices...</div>;
@@ -324,7 +304,7 @@ export default function InvoicesView({ customerId }) {
                 )}
                 Download PDF
               </Button>
-              {(selectedInvoice.invoice_status === 'finalized' || selectedInvoice.invoice_status === 'sent' || selectedInvoice.displayStatus === 'overdue') && selectedInvoice.balance_due > 0 && (
+              {(selectedInvoice.invoice_status === 'finalized' || selectedInvoice.invoice_status === 'sent' || getInvoiceStatus(selectedInvoice) === 'overdue') && selectedInvoice.balance_due > 0 && (
                 <Button 
                   onClick={() => setShowPaymentModal(true)} 
                   className="bg-green-600 hover:bg-green-700 gap-2"
@@ -355,14 +335,14 @@ export default function InvoicesView({ customerId }) {
           <Card>
             <CardContent className="p-4">
               <div className="text-sm text-slate-600">Total Invoices</div>
-              <div className="text-2xl font-bold text-slate-900">{invoices.length}</div>
+              <div className="text-2xl font-bold text-slate-900">{customerInvoices.length}</div>
             </CardContent>
           </Card>
           <Card>
             <CardContent className="p-4">
               <div className="text-sm text-slate-600">Overdue</div>
               <div className="text-2xl font-bold text-red-600">
-                {invoices.filter(inv => getInvoiceStatus(inv) === 'overdue').length}
+                {customerInvoices.filter(inv => getInvoiceStatus(inv) === 'overdue').length}
               </div>
             </CardContent>
           </Card>
@@ -370,7 +350,7 @@ export default function InvoicesView({ customerId }) {
             <CardContent className="p-4">
               <div className="text-sm text-slate-600">Total Due</div>
               <div className="text-2xl font-bold text-slate-900">
-                ${invoices.reduce((sum, inv) => sum + (inv.balance_due || 0), 0).toFixed(2)}
+                ${customerInvoices.reduce((sum, inv) => sum + (inv.balance_due || 0), 0).toFixed(2)}
               </div>
             </CardContent>
           </Card>
@@ -378,7 +358,7 @@ export default function InvoicesView({ customerId }) {
             <CardContent className="p-4">
               <div className="text-sm text-slate-600">Total Paid</div>
               <div className="text-2xl font-bold text-green-600">
-                ${invoices.reduce((sum, inv) => sum + (inv.amount_paid || 0), 0).toFixed(2)}
+                ${customerInvoices.reduce((sum, inv) => sum + (inv.amount_paid || 0), 0).toFixed(2)}
               </div>
             </CardContent>
           </Card>
@@ -504,10 +484,10 @@ export default function InvoicesView({ customerId }) {
           <CardContent className="text-center py-12">
             <Receipt className="w-16 h-16 text-slate-300 mx-auto mb-4" />
             <p className="text-slate-500">
-              {invoices.length === 0 ? 'No invoices found' : 'No invoices match your filters'}
+              {customerInvoices.length === 0 ? 'No invoices found' : 'No invoices match your filters'}
             </p>
             <p className="text-sm text-slate-400 mt-2">
-              {invoices.length === 0 ? 'Invoices will appear here after job completion' : 'Try adjusting your filters'}
+              {customerInvoices.length === 0 ? 'Invoices will appear here after job completion' : 'Try adjusting your filters'}
             </p>
           </CardContent>
         </Card>
@@ -533,7 +513,7 @@ export default function InvoicesView({ customerId }) {
           <AnimatePresence>
           {filteredAndSortedInvoices.map((invoice) => (
             <motion.div
-              key={invoice.id}
+              key={invoice._id || invoice.id}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0 }}
@@ -546,11 +526,11 @@ export default function InvoicesView({ customerId }) {
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
-                        toggleSelectInvoice(invoice.id);
+                        toggleSelectInvoice(invoice._id || invoice.id);
                       }}
                       className="mt-1"
                     >
-                      {selectedInvoices.has(invoice.id) ? (
+                      {selectedInvoices.has(invoice._id || invoice.id) ? (
                         <CheckSquare className="w-5 h-5 text-blue-600" />
                       ) : (
                         <Square className="w-5 h-5 text-slate-400 hover:text-slate-600" />

@@ -108,7 +108,7 @@ export default function JobList({ jobs, customers, onView, onGenerateInvoice, on
             ) : (
               filteredJobs.map((job) => (
                 <motion.tr
-                  key={job.id}
+                  key={job._id || job.id}
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   className="border-b border-slate-100 hover:bg-slate-50 transition-colors"

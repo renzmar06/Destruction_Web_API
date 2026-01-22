@@ -2,6 +2,11 @@
 
 import { toast } from 'sonner';
 import React, { useState, useEffect } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { AppDispatch, RootState } from '@/redux/store';
+import { fetchCustomers } from '@/redux/slices/customersSlice';
+import { fetchEstimates } from '@/redux/slices/estimatesSlice';
+import { fetchJobs } from '@/redux/slices/jobsSlice';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -23,6 +28,9 @@ interface CustomerTask {
   completed_date?: string;
   tags: string;
   related_to: 'none' | 'customer' | 'estimate' | 'job' | 'invoice';
+  customer?: string;
+  estimate?: string;
+  job?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -32,6 +40,28 @@ interface User {
   name: string;
   email: string;
   role: string;
+}
+
+interface Customer {
+  _id: string;
+  first_name: string;
+  last_name: string;
+  email: string;
+  display_name?: string;
+}
+
+interface Estimate {
+  _id: string;
+  estimate_number: string;
+  customer_id: string;
+  total: number;
+  status: string;
+}
+
+interface Job {
+  _id: string;
+ job_name: string;
+  customer_id: string;
 }
 
 const statusConfig = {
@@ -50,6 +80,11 @@ const priorityConfig = {
 
 export default function CustomerTaskPage() {
   const { user } = useAuth();
+  const dispatch = useDispatch<AppDispatch>();
+  const { customers } = useSelector((state: RootState) => state.customers);
+  const { estimates } = useSelector((state: RootState) => state.estimates);
+  const { jobs } = useSelector((state: RootState) => state.jobs);
+  
   const [tasks, setTasks] = useState<CustomerTask[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
@@ -70,21 +105,25 @@ export default function CustomerTaskPage() {
     assigned_to: '',
     due_date: '',
     tags: '',
-    related_to: 'none' as CustomerTask['related_to']
+    related_to: 'none' as CustomerTask['related_to'],
+    customer: '',
+    estimate: '',
+    job: ''
   });
 
   useEffect(() => {
-    if (user?.id) {
-      fetchTasks();
-      fetchUsers();
-    }
-  }, [user?.id]);
+    fetchTasks();
+    fetchUsers();
+    dispatch(fetchCustomers());
+    dispatch(fetchEstimates());
+    dispatch(fetchJobs());
+  }, [dispatch]);
 
   useEffect(() => {
     if (user) {
       setFormData(prev => ({ ...prev, customer_id: user.id }));
     }
-  }, [user]);
+  }, [user?.id]);
 
   const fetchUsers = async () => {
     try {
@@ -99,10 +138,8 @@ export default function CustomerTaskPage() {
   };
 
   const fetchTasks = async () => {
-    if (!user?.id) return;
-    
     try {
-      const response = await fetch(`/api/customer-tasks?customer_id=${user.id}`);
+      const response = await fetch('/api/customer-tasks');
       const data = await response.json();
       if (data.success) {
         setTasks(data.data);
@@ -153,7 +190,10 @@ export default function CustomerTaskPage() {
       assigned_to: task.assigned_to,
       due_date: task.due_date ? new Date(task.due_date).toISOString().split('T')[0] : '',
       tags: task.tags,
-      related_to: task.related_to
+      related_to: task.related_to,
+      customer: task.customer || '',
+      estimate: task.estimate || '',
+      job: task.job || ''
     });
     setShowForm(true);
   };
@@ -190,7 +230,10 @@ export default function CustomerTaskPage() {
       assigned_to: '',
       due_date: '',
       tags: '',
-      related_to: 'none' as CustomerTask['related_to']
+      related_to: 'none' as CustomerTask['related_to'],
+      customer: '',
+      estimate: '',
+      job: ''
     });
     setEditingTask(null);
     setShowForm(false);
@@ -585,6 +628,66 @@ export default function CustomerTaskPage() {
                         <option value="invoice">Invoice</option>
                       </select>
                     </div>
+
+                    {formData.related_to === 'customer' && (
+                      <div>
+                        <label className="block text-sm font-medium text-slate-700 mb-2">
+                          Customer
+                        </label>
+                        <select
+                          value={formData.customer}
+                          onChange={(e) => setFormData({ ...formData, customer: e.target.value })}
+                          className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        >
+                          <option value="">Select customer</option>
+                          {customers.map(customer => (
+                            <option key={customer._id} value={customer.display_name || `${customer.first_name} ${customer.last_name}`}>
+                              {customer.display_name || `${customer.first_name} ${customer.last_name}`} 
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
+
+                    {formData.related_to === 'estimate' && (
+                      <div>
+                        <label className="block text-sm font-medium text-slate-700 mb-2">
+                          Estimate
+                        </label>
+                        <select
+                          value={formData.estimate}
+                          onChange={(e) => setFormData({ ...formData, estimate: e.target.value })}
+                          className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        >
+                          <option value="">Select estimate</option>
+                          {estimates.map(estimate => (
+                            <option key={estimate._id} value={estimate.estimate_number}>
+                              {estimate.estimate_number}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
+
+                    {formData.related_to === 'job' && (
+                      <div>
+                        <label className="block text-sm font-medium text-slate-700 mb-2">
+                          Job
+                        </label>
+                        <select
+                          value={formData.job}
+                          onChange={(e) => setFormData({ ...formData, job: e.target.value })}
+                          className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        >
+                          <option value="">Select job</option>
+                          {jobs.map(job => (
+                            <option key={job._id} value={job.job_name}>
+                              {job.job_name}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
 
                     <div>
                       <label className="block text-sm font-medium text-slate-700 mb-2">
