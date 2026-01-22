@@ -205,6 +205,7 @@ function CustomersPageContent() {
 
   const handleSave = async (): Promise<void> => {
     try {
+      
       // Validate required fields
       if (!formData.password && !editingCustomer) {
         alert('Password is required for new customers');

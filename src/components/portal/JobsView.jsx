@@ -15,11 +15,14 @@ const statusConfig = {
   archived: { label: 'Archived', className: 'bg-slate-100 text-slate-600' }
 };
 
-export default function JobsView({ userId }) {
+export default function JobsView({ userId=null }) {
+
   const { jobs, loading } = useAppSelector(state => state.jobs);
   
   const customerJobs = jobs.filter(job => {
-    
+    if (userId === null) {
+      return true; // Show all jobs if userId is null
+    }
     return job.user_id === userId;
   });
   const isLoading = loading;

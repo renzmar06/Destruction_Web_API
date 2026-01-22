@@ -76,7 +76,7 @@ export async function POST(request: NextRequest) {
       body.valid_until_date = new Date(body.valid_until_date);
     }
     
-    const estimate = await Estimate.create({ ...body, user_id: userId });
+    const estimate = await Estimate.create({ ...body, user_id: body.user_id || userId });
     return NextResponse.json({ 
       success: true, 
       message: 'Estimate created successfully',

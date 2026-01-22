@@ -22,6 +22,9 @@ export default function EstimateHeader({ data, onChange, customers, locations, e
   const handleCustomerChange = (customerId) => {
     const customer = customers.find(c => c._id === customerId || c.id === customerId);
     
+    // Alert customer data for debugging
+    alert(`Customer ID: ${customerId}\nCustomer User ID: ${customer?.user_id || 'Not found'}\nCustomer Name: ${customer?.legal_company_name || customer?.display_name || 'Not found'}`);
+    
     // Build formatted addresses
     const billingAddr = customer?.billing_street_1 ? 
       `${customer.billing_street_1}${customer.billing_street_2 ? ', ' + customer.billing_street_2 : ''}, ${customer.billing_city}, ${customer.billing_state} ${customer.billing_zip}` : '';
@@ -35,6 +38,7 @@ export default function EstimateHeader({ data, onChange, customers, locations, e
       customer_id: customerId,
       customer_name: customer?.legal_company_name || customer?.display_name || '',
       customer_email: customer?.email || '',
+      user_id: customer?.user_id,
       bill_to_address: billingAddr,
       ship_to_address: shippingAddr,
       payment_terms: customer?.payment_terms || 'net_30',
