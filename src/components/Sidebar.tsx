@@ -66,6 +66,7 @@ export default function Sidebar() {
     { id: 'customer-estimates', label: 'My Estimates', icon: FileText, href: '/customer-estimates' },
     { id: 'customer-jobs', label: 'My Jobs', icon: Calendar, href: '/customer-jobs' },
     { id: 'customer-invoices', label: 'My Invoices', icon: DollarSign, href: '/customer-invoices' },
+     { id: 'customer-document', label: 'My document', icon: DollarSign, href: '/customer-document' },
     // { id: 'customer-messages', label: 'Messages', icon: MessageSquare, href: '/customer-messages' }
   ];
 

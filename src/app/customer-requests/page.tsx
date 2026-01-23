@@ -17,9 +17,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Plus, ClipboardList, Calendar, Clock, CheckCircle, FileText, User, Phone } from "lucide-react";
 import { createServiceRequest, fetchServiceRequests, clearError, updateServiceRequest, deleteServiceRequest } from '@/redux/slices/customerRequestsSlice';
 import { RootState, AppDispatch } from '@/redux/store';
-import { toast } from 'sonner';
+import { toast, Toaster } from 'sonner';
+import ViewDetail from './ViewDetails';
 
-const statusConfig: Record<string, { label: string; className: string; icon: any }> = {
+const statusConfig = {
   draft: { label: 'Draft', className: 'bg-slate-100 text-slate-700', icon: FileText },
   pending: { label: 'Pending Review', className: 'bg-amber-100 text-amber-700', icon: Clock },
   in_review: { label: 'In Review', className: 'bg-blue-100 text-blue-700', icon: Clock },
@@ -40,6 +41,8 @@ export default function CustomerRequests() {
   const [serviceType, setServiceType] = useState('');
   const [mainServiceType, setMainServiceType] = useState('');
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
+  const [uploadedUrls, setUploadedUrls] = useState<string[]>([]);
+  const [errors, setErrors] = useState<{ [key: string]: string }>({});
 
   // Form state
   const [formData, setFormData] = useState({
@@ -80,6 +83,26 @@ export default function CustomerRequests() {
     { id: '3', legal_company_name: 'Smith Contractors', display_name: 'Smith Contractors' }
   ];
 
+  const AdminPreview = () => (
+    user?.role === 'admin' && (
+      <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-8">
+        <p className="text-sm font-medium text-amber-900 mb-2">Admin Preview Mode</p>
+        <Select value={selectedCustomerId || ''} onValueChange={setSelectedCustomerId}>
+          <SelectTrigger className="w-full md:w-96 bg-white">
+            <SelectValue placeholder="Select customer to preview" />
+          </SelectTrigger>
+          <SelectContent>
+            {customers.map(c => (
+              <SelectItem key={c.id} value={c.id}>
+                {c.legal_company_name || c.display_name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+    )
+  );
+
   useEffect(() => {
     dispatch(fetchServiceRequests());
   }, [dispatch]);
@@ -95,55 +118,101 @@ export default function CustomerRequests() {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
+  const validateForm = () => {
+    const newErrors: { [key: string]: string } = {};
+    
+    if (!mainServiceType) {
+      newErrors.serviceType = 'Service Type is required';
+    }
+    if (!formData.productType) {
+      newErrors.productType = 'Product Type is required';
+    }
+    if (!formData.preferredDate) {
+      newErrors.preferredDate = 'Preferred Date is required';
+    }
+    if (!formData.contactName) {
+      newErrors.contactName = 'Contact Name is required';
+    }
+    if (!formData.contactPhone) {
+      newErrors.contactPhone = 'Contact Phone is required';
+    }
+    
+    setErrors(newErrors);
+    
+    // Focus on first error field
+    if (Object.keys(newErrors).length > 0) {
+      const firstErrorField = Object.keys(newErrors)[0];
+      const element = document.querySelector(`[name="${firstErrorField}"]`) || 
+                    document.querySelector(`#${firstErrorField}`);
+      if (element && element instanceof HTMLElement) {
+        element.focus();
+        element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+      return false;
+    }
+    
+    return true;
+  };
+
   const handleSubmit = async (isDraft = false) => {
+    if (!validateForm()) {
+      toast.error('Please fill in all required fields');
+      return;
+    }
+
     const requestData = {
       ...formData,
       serviceType: mainServiceType,
-      isDraft
+      attachments: uploadedUrls
     };
 
     try {
       if (selectedRequest) {
-        await dispatch(updateServiceRequest({ id: selectedRequest._id || selectedRequest.id, requestData })).unwrap();
+        await dispatch(updateServiceRequest({ id: selectedRequest._id || selectedRequest.id, requestData: requestData })).unwrap();
         toast.success('Request updated successfully');
       } else {
         await dispatch(createServiceRequest(requestData)).unwrap();
-        toast.success(isDraft ? 'Request saved as draft' : 'Service request submitted successfully');
+        toast.success('Request submitted successfully');
       }
-      setShowForm(false);
-      setSelectedRequest(null);
-      setFormData({
-        serviceType: '',
-        productType: '',
-        materialCondition: '',
-        estimatedWeight: '',
-        unitCount: '',
-        palletCount: '',
-        palletType: '',
-        shrinkWrapped: false,
-        destructionType: '',
-        certificateRequired: false,
-        logisticsType: '',
-        pickupAddress: '',
-        pickupHours: '',
-        truckingService: false,
-        palletSwap: false,
-        additionalLabor: false,
-        hazardousNotes: '',
-        timeConstraints: '',
-        preferredDate: '',
-        urgency: 'normal',
-        contactName: '',
-        contactPhone: '',
-        quantityBreakdown: '',
-        scheduleFrequency: '',
-        problemDescription: ''
-      });
-      setMainServiceType('');
-      setServiceType('');
-    } catch (err) {
-      // Error handled by Redux
+    } catch (error) {
+      toast.error('Failed to submit request');
+      return;
     }
+
+    setShowForm(false);
+    setSelectedRequest(null);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    setFormData({
+      serviceType: '',
+      productType: '',
+      materialCondition: '',
+      estimatedWeight: '',
+      unitCount: '',
+      palletCount: '',
+      palletType: '',
+      shrinkWrapped: false,
+      destructionType: '',
+      certificateRequired: false,
+      logisticsType: '',
+      pickupAddress: '',
+      pickupHours: '',
+      truckingService: false,
+      palletSwap: false,
+      additionalLabor: false,
+      hazardousNotes: '',
+      timeConstraints: '',
+      preferredDate: '',
+      urgency: 'normal',
+      contactName: '',
+      contactPhone: '',
+      quantityBreakdown: '',
+      scheduleFrequency: '',
+      problemDescription: ''
+    });
+    setMainServiceType('');
+    setServiceType('');
+    setUploadedFiles([]);
+    setUploadedUrls([]);
   };
 
   const handleViewDetails = (request: any) => {
@@ -182,204 +251,105 @@ export default function CustomerRequests() {
       problemDescription: request.problemDescription || ''
     });
     setMainServiceType(request.serviceType || '');
+    
+    // Load existing attachments
+    if (request.attachments && request.attachments.length > 0) {
+      setUploadedUrls(request.attachments);
+      // Create mock file objects for display
+      const mockFiles = request.attachments.map((url: string, index: number) => {
+        const fileName = url.split('/').pop() || `attachment-${index + 1}`;
+        return { name: fileName.replace(/^\d+_/, '') }; // Remove timestamp prefix
+      });
+      setUploadedFiles(mockFiles);
+    } else {
+      setUploadedUrls([]);
+      setUploadedFiles([]);
+    }
+    
     setShowForm(true);
   };
 
   const handleDelete = async (request: any) => {
-    if (confirm('Are you sure you want to delete this request?')) {
-      try {
-        await dispatch(deleteServiceRequest(request._id || request.id)).unwrap();
-        toast.success('Request deleted successfully');
-      } catch (err) {
-        // Error handled by Redux
-      }
+    try {
+      await dispatch(deleteServiceRequest(request._id || request.id)).unwrap();
+      toast.success('Request deleted successfully');
+      // Navigate back to list after successful deletion
+      setShowDetails(false);
+      setSelectedRequest(null);
+    } catch (err) {
+      toast.error('Failed to delete request');
     }
   };
 
   const getStatusConfig = (status: string) => {
-    return statusConfig[status?.toLowerCase()] || statusConfig.pending;
+    return statusConfig[status?.toLowerCase() as keyof typeof statusConfig] || statusConfig.pending;
   };
 
-  if (showDetails && selectedRequest) {
-    // ────────────────────────────────────────────────
-    //               REQUEST DETAILS PAGE
-    // ────────────────────────────────────────────────
-    const config = getStatusConfig(selectedRequest.status);
-    const Icon = config.icon;
-
-    return (
+  return (
+    <>
+      <Toaster position="top-right" duration={1000} />
       <div className="min-h-screen bg-slate-50 p-6">
-        <div className="max-w-7xl mx-auto">
-          {/* Admin Preview */}
-          {user?.role === 'admin' && (
-            <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-8">
-              <p className="text-sm font-medium text-amber-900 mb-2">Admin Preview Mode</p>
-              <Select value={selectedCustomerId || ''} onValueChange={setSelectedCustomerId}>
-                <SelectTrigger className="w-full md:w-96 bg-white">
-                  <SelectValue placeholder="Select customer to preview" />
-                </SelectTrigger>
-                <SelectContent>
-                  {customers.map(c => (
-                    <SelectItem key={c.id} value={c.id}>
-                      {c.legal_company_name || c.display_name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          )}
-
-          {/* Header */}
-          <div className="flex items-center justify-between mb-8">
-            <div>
-              <h1 className="text-3xl font-bold text-slate-900">Service Requests</h1>
-              <p className="text-slate-600 mt-1">Submit and track your service requests</p>
-            </div>
-            <div className="flex gap-3">
-              <Button variant="ghost" onClick={() => { setShowDetails(false); setSelectedRequest(null); }}>← Back to List</Button>
-              <Button onClick={() => setShowForm(true)} className="bg-blue-600 hover:bg-blue-700 gap-2">
-                <Plus className="w-4 h-4" />New Request
-              </Button>
-            </div>
-          </div>
-
-          {/* Request Details */}
-          <Card>
-            <CardHeader className="pb-4 border-b bg-slate-50">
-              <div className="flex items-start justify-between gap-4">
-                <div>
-                  <CardTitle className="text-2xl font-bold">
-                    Request #{selectedRequest.requestNumber || 'SR-0001'}
-                  </CardTitle>
-                  <p className="text-slate-600 mt-1.5">
-                    Submitted: {new Date(selectedRequest.createdAt || Date.now()).toLocaleString('en-US', {
-                      month: 'short',
-                      day: 'numeric',
-                      year: 'numeric',
-                      hour: 'numeric',
-                      minute: '2-digit',
-                      hour12: true
-                    })}
-                  </p>
-                </div>
-                <div className="flex items-center gap-3">
-                  <Badge className={`${config.className} text-base px-5 py-1.5`}>
-                    <Icon className="w-4 h-4 mr-1.5" />
-                    {config.label}
-                  </Badge>
-                  <Button variant="outline" size="sm" onClick={() => handleEdit(selectedRequest)}>Edit</Button>
-                  <Button variant="outline" size="sm" onClick={() => handleDelete(selectedRequest)}>Delete</Button>
-                </div>
+      <div className="max-w-7xl mx-auto">
+        <AdminPreview />
+        
+        {showDetails && selectedRequest ? (
+          <ViewDetail 
+            selectedRequest={selectedRequest}
+            onBack={() => { setShowDetails(false); setSelectedRequest(null); }}
+            onNewRequest={() => setShowForm(true)}
+            onEdit={handleEdit}
+            onDelete={handleDelete}
+          />
+        ) : showForm ? (
+          // NEW REQUEST FORM
+          <>
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h1 className="text-3xl font-bold text-slate-900">{selectedRequest ? 'Edit Service Request' : 'New Service Request'}</h1>
+                <p className="text-slate-600 mt-1">Fill in the details below</p>
               </div>
-            </CardHeader>
-
-            <Tabs defaultValue="details" className="mt-0">
-              <TabsList className="px-6 pt-1 pb-0 border-b bg-white rounded-none justify-start h-12">
-                <TabsTrigger value="details" className="text-base">Details</TabsTrigger>
-                <TabsTrigger value="messages" className="text-base">Messages</TabsTrigger>
-                <TabsTrigger value="files" className="text-base">Files (1)</TabsTrigger>
-              </TabsList>
-
-              <TabsContent value="details" className="px-6 py-6">
-                <div className="grid md:grid-cols-2 gap-8">
-                  <div className="space-y-6">
-                    <div>
-                      <h4 className="text-sm font-medium text-slate-500 mb-1.5">Service Type</h4>
-                      <p className="font-medium text-slate-900 capitalize">
-                        {selectedRequest.serviceType?.replace(/-/g, ' ') || '—'}
-                      </p>
-                    </div>
-                    <div>
-                      <h4 className="text-sm font-medium text-slate-500 mb-1.5">Product Type</h4>
-                      <p className="font-medium text-slate-900">{selectedRequest.productType || '—'}</p>
-                    </div>
-                    <div>
-                      <h4 className="text-sm font-medium text-slate-500 mb-1.5">Estimated Volume</h4>
-                      <p className="font-medium text-slate-900">
-                        {selectedRequest.estimatedWeight || selectedRequest.unitCount || selectedRequest.quantityBreakdown?.substring(0, 60) + '...' || '—'}
-                      </p>
-                    </div>
-                    <div>
-                      <h4 className="text-sm font-medium text-slate-500 mb-1.5">Preferred Date</h4>
-                      <p className="font-medium text-slate-900">
-                        {selectedRequest.preferredDate ? new Date(selectedRequest.preferredDate).toLocaleDateString('en-US', {
-                          month: 'long', day: 'numeric', year: 'numeric'
-                        }) : '—'}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="space-y-6">
-                    <div>
-                      <h4 className="text-sm font-medium text-slate-500 mb-2">Contact</h4>
-                      <div className="space-y-2.5 bg-slate-50 p-4 rounded-lg border">
-                        <div className="flex items-center gap-3">
-                          <User className="h-5 w-5 text-slate-600" />
-                          <span className="font-medium">{selectedRequest.contactName || 'Renz Ramos'}</span>
-                        </div>
-                        <div className="flex items-center gap-3">
-                          <Phone className="h-5 w-5 text-slate-600" />
-                          <span className="font-medium">{selectedRequest.contactPhone || '09957322939'}</span>
-                        </div>
-                      </div>
-                    </div>
-                    {selectedRequest.quantityBreakdown && (
-                      <div>
-                        <h4 className="text-sm font-medium text-slate-500 mb-1.5">Quantity Breakdown</h4>
-                        <p className="whitespace-pre-wrap text-slate-800">{selectedRequest.quantityBreakdown}</p>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </TabsContent>
-
-              <TabsContent value="messages" className="px-6 py-8 text-center text-slate-500">
-                No messages yet.
-              </TabsContent>
-
-              <TabsContent value="files" className="px-6 py-8 text-center text-slate-500">
-                1 file attached (preview/download coming soon)
-              </TabsContent>
-            </Tabs>
-          </Card>
-        </div>
-      </div>
-    );
-  }
-
-  if (showForm) {
-    // ────────────────────────────────────────────────
-    //               NEW REQUEST FORM
-    // ────────────────────────────────────────────────
-    return (
-      <div className="min-h-screen bg-slate-50 p-6">
-        <div className="max-w-7xl mx-auto">
-          {user?.role === 'admin' && (
-            <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6">
-              <p className="text-sm font-medium text-amber-900 mb-2">Admin Preview Mode</p>
-              <Select value={selectedCustomerId || ''} onValueChange={setSelectedCustomerId}>
-                <SelectTrigger className="w-full md:w-96 bg-white">
-                  <SelectValue placeholder="Select customer to preview" />
-                </SelectTrigger>
-                <SelectContent>
-                  {customers.map(c => (
-                    <SelectItem key={c.id} value={c.id}>
-                      {c.legal_company_name || c.display_name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+             
             </div>
-          )}
-
-          <div className="flex items-center justify-between mb-6">
-            <div>
-              <h1 className="text-3xl font-bold text-slate-900">{selectedRequest ? 'Edit Service Request' : 'New Service Request'}</h1>
-              <p className="text-slate-600 mt-1">Fill in the details below</p>
-            </div>
-            <Button variant="ghost" onClick={() => { setShowForm(false); setSelectedRequest(null); }}>
-              ← Back to List
-            </Button>
-          </div>
+            <div className='mb-3'> 
+             <Button variant="outline" onClick={() => { 
+                setShowForm(false); 
+                setSelectedRequest(null);
+                // Clear form data when going back
+                setFormData({
+                  serviceType: '',
+                  productType: '',
+                  materialCondition: '',
+                  estimatedWeight: '',
+                  unitCount: '',
+                  palletCount: '',
+                  palletType: '',
+                  shrinkWrapped: false,
+                  destructionType: '',
+                  certificateRequired: false,
+                  logisticsType: '',
+                  pickupAddress: '',
+                  pickupHours: '',
+                  truckingService: false,
+                  palletSwap: false,
+                  additionalLabor: false,
+                  hazardousNotes: '',
+                  timeConstraints: '',
+                  preferredDate: '',
+                  urgency: 'normal',
+                  contactName: '',
+                  contactPhone: '',
+                  quantityBreakdown: '',
+                  scheduleFrequency: '',
+                  problemDescription: ''
+                });
+                setMainServiceType('');
+                setServiceType('');
+                setUploadedFiles([]);
+                setUploadedUrls([]);
+              }}>
+                ← Back to List
+              </Button>
+              </div>
 
           <Card>
             <CardContent className="pt-6 space-y-8">
@@ -387,12 +357,18 @@ export default function CustomerRequests() {
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-2">Service Type *</label>
                 <select
-                  className="w-full p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  id="serviceType"
+                  name="serviceType"
+                  className="w-full p-2 border border-slate-300 rounded-lg"
                   value={mainServiceType}
                   onChange={(e) => {
                     setMainServiceType(e.target.value);
                     handleInputChange('serviceType', e.target.value);
+                    if (errors.serviceType) {
+                      setErrors(prev => ({ ...prev, serviceType: '' }));
+                    }
                   }}
+                  required
                 >
                   <option value="">Select Service Type</option>
                   <option value="beverage-destruction">Beverage Destruction</option>
@@ -401,6 +377,9 @@ export default function CustomerRequests() {
                   <option value="emergency-destruction">Emergency Destruction</option>
                   <option value="scheduled-disposal">Scheduled Disposal Program</option>
                 </select>
+                {errors.serviceType && (
+                  <p className="text-red-500 text-sm mt-1">{errors.serviceType}</p>
+                )}
               </div>
 
               {/* Conditional fields based on service type */}
@@ -408,7 +387,7 @@ export default function CustomerRequests() {
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-2">Quantity Breakdown</label>
                   <textarea
-                    className="w-full p-3 border border-slate-300 rounded-lg h-24 focus:ring-2 focus:ring-blue-500"
+                    className="w-full p-3 border border-slate-300 rounded-lg h-24"
                     placeholder="e.g., 200 cases of aluminum cans, 50 cases of glass bottles..."
                     maxLength={500}
                     value={formData.quantityBreakdown}
@@ -420,6 +399,43 @@ export default function CustomerRequests() {
                 </div>
               )}
 
+              {/* Emergency Destruction - Problem Description */}
+              {mainServiceType === 'emergency-destruction' && (
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-2">Problem Description *</label>
+                  <p className="text-sm text-slate-600 mb-2">Describe the emergency situation requiring immediate destruction...</p>
+                  <textarea
+                    className="w-full p-3 border border-slate-300 rounded-lg h-24"
+                    placeholder="Describe the emergency situation..."
+                    maxLength={1000}
+                    value={formData.problemDescription}
+                    onChange={(e) => handleInputChange('problemDescription', e.target.value)}
+                  />
+                  <div className="text-xs text-slate-500 mt-1 text-right">
+                    {formData.problemDescription.length}/1000
+                  </div>
+                </div>
+              )}
+
+              {/* Scheduled Disposal - Schedule Frequency */}
+              {mainServiceType === 'scheduled-disposal' && (
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-2">Schedule Frequency *</label>
+                  <p className="text-sm text-slate-600 mb-2">How often would you like scheduled pickups?</p>
+                  <select
+                    className="w-full p-2 border border-slate-300 rounded-lg"
+                    value={formData.scheduleFrequency}
+                    onChange={(e) => handleInputChange('scheduleFrequency', e.target.value)}
+                  >
+                    <option value="">Select frequency</option>
+                    <option value="weekly">Weekly</option>
+                    <option value="bi-weekly">Bi-weekly</option>
+                    <option value="monthly">Monthly</option>
+                    <option value="quarterly">Quarterly</option>
+                  </select>
+                </div>
+              )}
+
               {/* Material Details */}
               <div className="space-y-6">
                 <h3 className="text-lg font-semibold text-slate-900 border-b pb-2">Material Details</h3>
@@ -427,19 +443,34 @@ export default function CustomerRequests() {
                   <div>
                     <label className="block text-sm font-medium text-slate-700 mb-2">Product Type *</label>
                     <select
+                      id="productType"
+                      name="productType"
                       className="w-full p-2 border border-slate-300 rounded-lg"
                       value={formData.productType}
-                      onChange={(e) => handleInputChange('productType', e.target.value)}
+                      onChange={(e) => {
+                        handleInputChange('productType', e.target.value);
+                        if (errors.productType) {
+                          setErrors(prev => ({ ...prev, productType: '' }));
+                        }
+                      }}
+                      required
                     >
                       <option value="">Select Product Type</option>
                       <option value="Alcoholic Beverages">Alcoholic Beverages</option>
                       <option value="Non-Alcoholic Beverages">Non-Alcoholic Beverages</option>
                       <option value="Mixed Products">Mixed Products</option>
                     </select>
+                    {errors.productType && (
+                      <p className="text-red-500 text-sm mt-1">{errors.productType}</p>
+                    )}
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-slate-700 mb-2">Material Condition</label>
-                    <select className="w-full p-2 border border-slate-300 rounded-lg">
+                    <select 
+                      className="w-full p-2 border border-slate-300 rounded-lg"
+                      value={formData.materialCondition}
+                      onChange={(e) => handleInputChange('materialCondition', e.target.value)}
+                    >
                       <option value="">Select condition</option>
                       <option value="Full">Full</option>
                       <option value="Partial">Partial</option>
@@ -462,7 +493,7 @@ export default function CustomerRequests() {
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-slate-700 mb-2">Number of Pallets</label>
-                    <input type="number" className="w-full p-2 border border-slate-300 rounded-lg" placeholder="e.g., 10" value={formData.palletCount} onChange={(e) => handleInputChange('palletCount', e.target.value)} />
+                    <input type="number" className="w-full p-2 border border-slate-300 rounded-lg" placeholder="e.g., 10" value={formData.palletCount || ''} onChange={(e) => handleInputChange('palletCount', e.target.value)} />
                   </div>
                 </div>
               </div>
@@ -472,14 +503,24 @@ export default function CustomerRequests() {
                 <div className="grid grid-cols-2 gap-4 items-start">
                   <div>
                     <label className="block text-sm font-medium text-slate-700 mb-2">Pallet Type</label>
-                    <select className="w-full p-2 border border-slate-300 rounded-lg">
-                      <option value="">Standard</option>
-                      <option value="">Mixed</option>
-                      <option value="">Needs Rework</option>
+                    <select 
+                      className="w-full p-2 border border-slate-300 rounded-lg"
+                      value={formData.palletType}
+                      onChange={(e) => handleInputChange('palletType', e.target.value)}
+                    >
+                      <option value="">Select pallet type</option>
+                      <option value="Standard">Standard</option>
+                      <option value="Mixed">Mixed</option>
+                      <option value="Needs Rework">Needs Rework</option>
                     </select>
                   </div>
                   <div className="flex items-center">
-                    <input type="checkbox" className="mr-2" />
+                    <input 
+                      type="checkbox" 
+                      className="mr-2"
+                      checked={formData.shrinkWrapped}
+                      onChange={(e) => handleInputChange('shrinkWrapped', e.target.checked)}
+                    />
                     <label className="text-sm">Pallets are shrink-wrapped</label>
                   </div>
                 </div>
@@ -490,14 +531,24 @@ export default function CustomerRequests() {
                 <div className="grid grid-cols-2 gap-4 ">
                   <div>
                     <label className="block text-sm font-medium text-slate-700 mb-2">Destruction Type</label>
-                    <select className="w-full p-2 border border-slate-300 rounded-lg">
-                      <option value="">Standard</option>
-                      <option value="">Secure</option>
-                      <option value="">Witnessed</option>
+                    <select 
+                      className="w-full p-2 border border-slate-300 rounded-lg"
+                      value={formData.destructionType}
+                      onChange={(e) => handleInputChange('destructionType', e.target.value)}
+                    >
+                      <option value="">Select destruction type</option>
+                      <option value="Standard">Standard</option>
+                      <option value="Secure">Secure</option>
+                      <option value="Witnessed">Witnessed</option>
                     </select>
                   </div>
                   <div className="flex items-center h-10 mt-6">
-                    <input type="checkbox" className="mr-2" />
+                    <input 
+                      type="checkbox" 
+                      className="mr-2"
+                      checked={formData.certificateRequired}
+                      onChange={(e) => handleInputChange('certificateRequired', e.target.checked)}
+                    />
                     <label className="text-sm ">Certificate of Destruction Required</label>
                   </div>
                 </div>
@@ -521,29 +572,51 @@ export default function CustomerRequests() {
                   <div className="grid gap-4">
                     <div>
                       <label className="block text-sm font-medium text-slate-700 mb-2">Pickup Address</label>
-                       <textarea className="w-full p-2 border border-slate-300 rounded-lg h-20" placeholder="Enter Pickup Address..." />
+                       <textarea 
+                         className="w-full p-2 border border-slate-300 rounded-lg h-20" 
+                         placeholder="Enter Pickup Address..."
+                         value={formData.pickupAddress}
+                         onChange={(e) => handleInputChange('pickupAddress', e.target.value)}
+                       />
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-slate-700 mb-2">Pickup Hours/Availability</label>
                       <input 
                         type="text" 
                         className="w-full p-2 border border-slate-300 rounded-lg" 
-                        placeholder="e.g., 9 AM - 5 PM" 
+                        placeholder="e.g., 9 AM - 5 PM"
+                        value={formData.pickupHours}
+                        onChange={(e) => handleInputChange('pickupHours', e.target.value)}
                       />
                     </div>
                   </div>
                 )}
                 <div className="space-y-2">
                   <div className="flex items-center">
-                    <input type="checkbox" className="mr-2" />
+                    <input 
+                      type="checkbox" 
+                      className="mr-2"
+                      checked={formData.truckingService}
+                      onChange={(e) => handleInputChange('truckingService', e.target.checked)}
+                    />
                     <label className="text-sm">Need trucking service</label>
                   </div>
                   <div className="flex items-center">
-                    <input type="checkbox" className="mr-2" />
+                    <input 
+                      type="checkbox" 
+                      className="mr-2"
+                      checked={formData.palletSwap}
+                      onChange={(e) => handleInputChange('palletSwap', e.target.checked)}
+                    />
                     <label className="text-sm">Need pallet swap</label>
                   </div>
                   <div className="flex items-center">
-                    <input type="checkbox" className="mr-2" />
+                    <input 
+                      type="checkbox" 
+                      className="mr-2"
+                      checked={formData.additionalLabor}
+                      onChange={(e) => handleInputChange('additionalLabor', e.target.checked)}
+                    />
                     <label className="text-sm">Need additional labor</label>
                   </div>
                 </div>
@@ -553,11 +626,21 @@ export default function CustomerRequests() {
                 <h3 className="text-lg font-semibold text-slate-900">Special Notes</h3>
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-2">Hazardous Considerations</label>
-                  <textarea className="w-full p-2 border border-slate-300 rounded-lg h-20" placeholder="Any leaking, liquids, or hazardous materials?" />
+                  <textarea 
+                    className="w-full p-2 border border-slate-300 rounded-lg h-20" 
+                    placeholder="Any leaking, liquids, or hazardous materials?"
+                    value={formData.hazardousNotes}
+                    onChange={(e) => handleInputChange('hazardousNotes', e.target.value)}
+                  />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-2">Time Constraints / Deadlines</label>
-                  <textarea className="w-full p-2 border border-slate-300 rounded-lg h-20" placeholder="Any specific deadlines or time requirements?" />
+                  <textarea 
+                    className="w-full p-2 border border-slate-300 rounded-lg h-20" 
+                    placeholder="Any specific deadlines or time requirements?"
+                    value={formData.timeConstraints}
+                    onChange={(e) => handleInputChange('timeConstraints', e.target.value)}
+                  />
                 </div>
               </div>
 
@@ -566,14 +649,34 @@ export default function CustomerRequests() {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-slate-700 mb-2">Preferred Service Date *</label>
-                    <input type="date" className="w-full p-2 border border-slate-300 rounded-lg" value={formData.preferredDate} onChange={(e) => handleInputChange('preferredDate', e.target.value)} />
+                    <input 
+                      type="date" 
+                      id="preferredDate"
+                      name="preferredDate"
+                      className="w-full p-2 border border-slate-300 rounded-lg"
+                      value={formData.preferredDate} 
+                      onChange={(e) => {
+                        handleInputChange('preferredDate', e.target.value);
+                        if (errors.preferredDate) {
+                          setErrors(prev => ({ ...prev, preferredDate: '' }));
+                        }
+                      }} 
+                      required 
+                    />
+                    {errors.preferredDate && (
+                      <p className="text-red-500 text-sm mt-1">{errors.preferredDate}</p>
+                    )}
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-slate-700 mb-2">Urgency</label>
-                    <select className="w-full p-2 border border-slate-300 rounded-lg">
+                    <select 
+                      className="w-full p-2 border border-slate-300 rounded-lg"
+                      value={formData.urgency}
+                      onChange={(e) => handleInputChange('urgency', e.target.value)}
+                    >
                       <option value="normal">Normal (5-7 days)</option>
-                      <option value="normal">Expedited (2-3 days)</option>
-                      <option value="normal">Urgent (24 hours)</option>
+                      <option value="expedited">Expedited (2-3 days)</option>
+                      <option value="urgent">Urgent (24 hours)</option>
                     </select>
                   </div>
                 </div>
@@ -582,11 +685,43 @@ export default function CustomerRequests() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-2">Contact Name *</label>
-                  <input type="text" className="w-full p-2 border border-slate-300 rounded-lg" placeholder="Renz Ramos" value={formData.contactName} onChange={(e) => handleInputChange('contactName', e.target.value)} />
+                  <input 
+                    type="text" 
+                    id="contactName"
+                    name="contactName"
+                    className="w-full p-2 border border-slate-300 rounded-lg"
+                    placeholder="Renz Ramos" 
+                    value={formData.contactName} 
+                    onChange={(e) => {
+                      handleInputChange('contactName', e.target.value);
+                      if (errors.contactName) {
+                        setErrors(prev => ({ ...prev, contactName: '' }));
+                      }
+                    }} 
+                  />
+                  {errors.contactName && (
+                    <p className="text-red-500 text-sm mt-1">{errors.contactName}</p>
+                  )}
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-2">Contact Phone *</label>
-                  <input type="tel" className="w-full p-2 border border-slate-300 rounded-lg" placeholder="09957322939" value={formData.contactPhone} onChange={(e) => handleInputChange('contactPhone', e.target.value)} />
+                  <input 
+                    type="tel" 
+                    id="contactPhone"
+                    name="contactPhone"
+                    className="w-full p-2 border border-slate-300 rounded-lg"
+                    placeholder="09957322939" 
+                    value={formData.contactPhone} 
+                    onChange={(e) => {
+                      handleInputChange('contactPhone', e.target.value);
+                      if (errors.contactPhone) {
+                        setErrors(prev => ({ ...prev, contactPhone: '' }));
+                      }
+                    }} 
+                  />
+                  {errors.contactPhone && (
+                    <p className="text-red-500 text-sm mt-1">{errors.contactPhone}</p>
+                  )}
                 </div>
               </div>
 
@@ -599,9 +734,39 @@ export default function CustomerRequests() {
                     accept="image/*,video/*,.pdf,.doc,.docx" 
                     className="hidden" 
                     id="fileUpload"
-                    onChange={(e) => {
+                    onChange={async (e) => {
                       const files = Array.from(e.target.files || []);
+                      console.log('Files selected:', files);
                       setUploadedFiles(prev => [...prev, ...files]);
+                      
+                      // Upload files immediately
+                      for (const file of files) {
+                        const formData = new FormData();
+                        formData.append('file', file);
+                        
+                        try {
+                          console.log('Uploading file:', file.name);
+                          const response = await fetch('/api/upload', {
+                            method: 'POST',
+                            body: formData
+                          });
+                          
+                          const result = await response.json();
+                          console.log('Upload result:', result);
+                          if (result.success) {
+                            setUploadedUrls(prev => {
+                              const newUrls = [...prev, result.url];
+                              console.log('Updated uploadedUrls:', newUrls);
+                              return newUrls;
+                            });
+                          } else {
+                            toast.error(`Failed to upload ${file.name}: ${result.message}`);
+                          }
+                        } catch (error) {
+                          console.error('Upload error:', error);
+                          toast.error(`Failed to upload ${file.name}`);
+                        }
+                      }
                     }}
                   />
                   <label htmlFor="fileUpload" className="cursor-pointer">
@@ -617,7 +782,11 @@ export default function CustomerRequests() {
                       <div key={index} className="flex items-center justify-between p-2 bg-slate-100 rounded">
                         <span className="text-sm truncate">{file.name}</span>
                         <button 
-                          onClick={() => setUploadedFiles(prev => prev.filter((_, i) => i !== index))}
+                          onClick={() => {
+                            const fileIndex = uploadedFiles.findIndex((_, i) => i === index);
+                            setUploadedFiles(prev => prev.filter((_, i) => i !== index));
+                            setUploadedUrls(prev => prev.filter((_, i) => i !== fileIndex));
+                          }}
                           className="text-red-500 hover:text-red-700 ml-2"
                         >
                           ×
@@ -630,9 +799,6 @@ export default function CustomerRequests() {
 
               {/* Actions */}
               <div className="flex justify-end gap-4 pt-6 border-t">
-                <Button variant="outline" onClick={() => handleSubmit(true)} disabled={submitLoading}>
-                  Save as Draft
-                </Button>
                 <Button
                   className="bg-blue-600 hover:bg-blue-700"
                   onClick={() => handleSubmit(false)}
@@ -643,47 +809,59 @@ export default function CustomerRequests() {
               </div>
             </CardContent>
           </Card>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="min-h-screen bg-slate-50 p-6">
-      <div className="max-w-7xl mx-auto">
-        {/* Admin Preview */}
-        {user?.role === 'admin' && (
-          <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-8">
-            <p className="text-sm font-medium text-amber-900 mb-2">Admin Preview Mode</p>
-            <Select value={selectedCustomerId || ''} onValueChange={setSelectedCustomerId}>
-              <SelectTrigger className="w-full md:w-96 bg-white">
-                <SelectValue placeholder="Select customer to preview" />
-              </SelectTrigger>
-              <SelectContent>
-                {customers.map(c => (
-                  <SelectItem key={c.id} value={c.id}>
-                    {c.legal_company_name || c.display_name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        )}
-
-        {/* Header */}
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <h1 className="text-3xl font-bold text-slate-900">Service Requests</h1>
-            <p className="text-slate-600 mt-1">Submit and track your service requests</p>
-          </div>
-          <Button
-            onClick={() => setShowForm(true)}
-            className="bg-blue-600 hover:bg-blue-700 gap-2"
-          >
-            <Plus className="w-4 h-4" />
-            New Request
-          </Button>
-        </div>
+          </>
+        ) : (
+          // REQUESTS LIST
+          <>
+            {/* Header */}
+            <div className="flex items-center justify-between mb-8">
+              <div>
+                <h1 className="text-3xl font-bold text-slate-900">Service Requests</h1>
+                <p className="text-slate-600 mt-1">Submit and track your service requests</p>
+              </div>
+              <Button
+                onClick={() => {
+                  // Clear form data for new request
+                  setFormData({
+                    serviceType: '',
+                    productType: '',
+                    materialCondition: '',
+                    estimatedWeight: '',
+                    unitCount: '',
+                    palletCount: '',
+                    palletType: '',
+                    shrinkWrapped: false,
+                    destructionType: '',
+                    certificateRequired: false,
+                    logisticsType: '',
+                    pickupAddress: '',
+                    pickupHours: '',
+                    truckingService: false,
+                    palletSwap: false,
+                    additionalLabor: false,
+                    hazardousNotes: '',
+                    timeConstraints: '',
+                    preferredDate: '',
+                    urgency: 'normal',
+                    contactName: '',
+                    contactPhone: '',
+                    quantityBreakdown: '',
+                    scheduleFrequency: '',
+                    problemDescription: ''
+                  });
+                  setMainServiceType('');
+                  setServiceType('');
+                  setUploadedFiles([]);
+                  setUploadedUrls([]);
+                  setSelectedRequest(null);
+                  setShowForm(true);
+                }}
+                className="bg-blue-600 hover:bg-blue-700 gap-2"
+              >
+                <Plus className="w-4 h-4" />
+                New Request
+              </Button>
+            </div>
 
         {/* Requests List */}
         {loading ? (
@@ -705,30 +883,24 @@ export default function CustomerRequests() {
           </Card>
         ) : (
           <div className="space-y-4">
-            {requests.map((request: any) => {
+            {requests.map((request: any, index: number) => {
               const config = getStatusConfig(request.status);
               const Icon = config.icon;
 
               return (
-                <Card key={request._id || request.id} className="hover:shadow-md transition-shadow">
+                <Card key={request._id || request.id || `request-${index}`} className="hover:shadow-md transition-shadow">
                   <CardContent className="p-6">
                     <div className="flex items-start justify-between gap-4">
                       <div className="flex-1">
                         <div className="flex items-center gap-3 mb-2">
                           <h3 className="text-lg font-semibold text-slate-900">
-                            #{request.requestNumber || 'SR-XXXXX'}
+                            Request #{request.requestNumber || 'Service Request'}
                           </h3>
-                          <Badge className={`${config.className} px-3 py-1`}>
-                            <Icon className="w-3.5 h-3.5 mr-1.5" />
-                            {config.label}
-                          </Badge>
                         </div>
 
                         <p className="text-slate-700 font-medium capitalize mb-1">
                           {request.serviceType?.replace(/-/g, ' ') || 'Unknown Service'}
                         </p>
-
-                        <p className="text-slate-600 mb-3">{request.productType || '—'}</p>
 
                         <div className="flex flex-wrap items-center gap-5 text-sm text-slate-500">
                           <div className="flex items-center gap-1.5">
@@ -742,12 +914,6 @@ export default function CustomerRequests() {
                               })}
                             </span>
                           </div>
-                          {request.preferredDate && (
-                            <div className="flex items-center gap-1.5">
-                              <Clock className="w-4 h-4" />
-                              Preferred: {new Date(request.preferredDate).toLocaleDateString()}
-                            </div>
-                          )}
                         </div>
                       </div>
 
@@ -759,11 +925,6 @@ export default function CustomerRequests() {
                         >
                           View Details
                         </Button>
-                        {request.status === 'draft' && (
-                          <Button variant="outline" size="sm" onClick={() => handleEdit(request)}>
-                            Edit
-                          </Button>
-                        )}
                       </div>
                     </div>
                   </CardContent>
@@ -772,9 +933,10 @@ export default function CustomerRequests() {
             })}
           </div>
         )}
-
-
+          </>
+        )}
       </div>
-    </div>
+      </div>
+    </>
   );
 }
