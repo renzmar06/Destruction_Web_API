@@ -24,6 +24,9 @@ export async function GET(request: NextRequest) {
     if (user?.role === 'admin') {
       // Admin can see all estimates
       estimates = await Estimate.find().sort({ createdAt: -1 });
+    } else if (user?.role === 'customer') {
+      // Customer sees estimates where they are the customer
+      estimates = await Estimate.find({ customer_id: userId }).sort({ createdAt: -1 });
     } else {
       // Regular users see only their estimates
       estimates = await Estimate.find({ user_id: userId }).sort({ createdAt: -1 });

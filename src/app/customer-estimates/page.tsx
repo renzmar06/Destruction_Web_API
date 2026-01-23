@@ -17,7 +17,7 @@ import Link from 'next/link';
 interface Customer {
   _id?: string;
   id?: string;
-  email: string;
+  email?: string;
   display_name?: string;
   legal_company_name?: string;
 }

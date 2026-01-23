@@ -148,9 +148,8 @@ export default function CustomerInvoices() {
         </div>
 
         {/* Content */}
-        <InvoicesView 
-          customerId={customer._id || customer.id} 
-          customerEmail={customer.email}
+        <InvoicesView
+        userId={user.id || customer.id} 
         />
       </div>
     </div>

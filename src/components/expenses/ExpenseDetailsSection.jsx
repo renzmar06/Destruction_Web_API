@@ -6,13 +6,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { DollarSign } from "lucide-react";
 
 const expenseTypeLabels = {
-  transportation: 'Transportation',
-  disposal_processing: 'Disposal / Processing Fee',
-  equipment_rental: 'Equipment Rental',
+  transport: 'Transport',
+  packaging: 'Packaging',
+  equipment: 'Equipment',
   labor: 'Labor',
+  materials: 'Materials',
   utilities: 'Utilities',
-  fuel: 'Fuel',
-  storage: 'Storage',
   other: 'Other'
 };
 

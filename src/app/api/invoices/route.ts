@@ -24,6 +24,9 @@ export async function GET(request: NextRequest) {
     if (user?.role === 'admin') {
       // Admin can see all invoices
       invoices = await Invoice.find().sort({ createdAt: -1 });
+    } else if (user?.role === 'customer') {
+      // Customer sees invoices where they are the customer
+      invoices = await Invoice.find({ customer_id: userId }).sort({ createdAt: -1 });
     } else {
       // Regular users see only their invoices
       invoices = await Invoice.find({ user_id: userId }).sort({ createdAt: -1 });
@@ -87,8 +90,12 @@ export async function POST(request: NextRequest) {
       data.due_date = new Date(data.due_date);
     }
     
-    // Ensure user_id is set
-    const invoiceData = { ...data, user_id: userId };
+    // Ensure user_id and customer_id are set
+    const invoiceData = { 
+      ...data, 
+      user_id: userId,
+      customer_id: data.customer_id || data.customerId // Handle both field names
+    };
     console.log('Final invoice data with user_id:', invoiceData);
     
     const invoice = new Invoice(invoiceData);

@@ -16,13 +16,12 @@ const statusConfig = {
 };
 
 const expenseTypeLabels = {
-  transportation: 'Transportation',
-  disposal_processing: 'Disposal / Processing',
-  equipment_rental: 'Equipment Rental',
+  transport: 'Transport',
+  packaging: 'Packaging',
+  equipment: 'Equipment',
   labor: 'Labor',
+  materials: 'Materials',
   utilities: 'Utilities',
-  fuel: 'Fuel',
-  storage: 'Storage',
   other: 'Other'
 };
 
@@ -38,7 +37,7 @@ export default function ExpenseList({ expenses, onView, onApprove, onArchive, is
   const filteredExpenses = expenses.filter(expense => {
     const matchesSearch = expense.expense_id?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          expense.vendor_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         expense.job_reference?.toLowerCase().includes(searchTerm.toLowerCase());
+                         expense.description?.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = statusFilter === 'all' || expense.expense_status === statusFilter;
     const matchesType = typeFilter === 'all' || expense.expense_type === typeFilter;
     return matchesSearch && matchesStatus && matchesType;
@@ -119,15 +118,15 @@ export default function ExpenseList({ expenses, onView, onApprove, onArchive, is
             ) : (
               filteredExpenses.map((expense) => (
                 <motion.tr
-                  key={expense.id}
+                  key={expense._id || expense.id}
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   className="border-b border-slate-100 hover:bg-slate-50 transition-colors"
                 >
                   <TableCell className="font-medium text-slate-900">{expense.expense_id}</TableCell>
-                  <TableCell className="text-slate-700">{expenseTypeLabels[expense.expense_type]}</TableCell>
+                  <TableCell className="text-slate-700">{expenseTypeLabels[expense.expense_type] || expense.expense_type}</TableCell>
                   <TableCell className="text-slate-700">{expense.vendor_name}</TableCell>
-                  <TableCell className="text-slate-600 text-sm">{expense.job_reference || '-'}</TableCell>
+                  <TableCell className="text-slate-600 text-sm">{expense.job_id || '-'}</TableCell>
                   <TableCell className="font-semibold text-slate-900">${expense.amount?.toFixed(2)}</TableCell>
                   <TableCell className="text-slate-600 text-sm">
                     {expense.expense_date ? format(new Date(expense.expense_date), 'MMM d, yyyy') : 'N/A'}
