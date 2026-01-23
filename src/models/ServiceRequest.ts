@@ -74,7 +74,6 @@ const ServiceRequestSchema: Schema = new Schema({
     sentBy: { type: String, required: true },
     timestamp: { type: Date, default: Date.now }
   }],
-  status: { type: String, required: true, default: 'pending' }
   status: { type: String, required: true, default: 'pending' },
   adminNotes: { type: String }
 }, {
