@@ -62,6 +62,7 @@ export default function Invoices() {
   const [successMessage, setSuccessMessage] = useState('');
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [invoiceToDelete, setInvoiceToDelete] = useState<Invoice | null>(null);
+  const [sendingInvoice, setSendingInvoice] = useState<string | null>(null);
   const [lineItems, setLineItems] = useState([{ id: 1, description: '', quantity: 1, rate: 0, amount: 0 }]);
   const [attachments, setAttachments] = useState<{id: number, name: string, url: string}[]>([]);
   const [uploading, setUploading] = useState(false);
@@ -267,6 +268,7 @@ export default function Invoices() {
   };
 
   const handleSend = async (invoice: Invoice) => {
+    setSendingInvoice(invoice._id!);
     try {
       const response = await fetch('/api/invoices/send', {
         method: 'POST',
@@ -288,6 +290,8 @@ export default function Invoices() {
       }
     } catch (error) {
       showSuccessToast('Error sending invoice.');
+    } finally {
+      setSendingInvoice(null);
     }
   };
 
@@ -974,6 +978,7 @@ export default function Invoices() {
           onSendReminder={() => {}}
           onVoid={() => {}}
           isLoading={loading}
+          sendingInvoice={sendingInvoice}
         />
 
         {/* Success Toast */}

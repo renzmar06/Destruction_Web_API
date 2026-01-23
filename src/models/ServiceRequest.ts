@@ -37,6 +37,7 @@ export interface IServiceRequest extends Document {
   status: string;
   createdAt: Date;
   updatedAt: Date;
+  adminNotes?: string;
 }
 
 const ServiceRequestSchema: Schema = new Schema({
@@ -74,6 +75,8 @@ const ServiceRequestSchema: Schema = new Schema({
     timestamp: { type: Date, default: Date.now }
   }],
   status: { type: String, required: true, default: 'pending' }
+  status: { type: String, required: true, default: 'pending' },
+  adminNotes: { type: String }
 }, {
   timestamps: true
 });

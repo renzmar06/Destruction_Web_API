@@ -7,19 +7,19 @@ export async function POST(request: NextRequest) {
       message: 'Logged out successfully'
     });
 
-    // Clear the token cookie
+    // Clear the auth token cookie
     response.cookies.set('token', '', {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      expires: new Date(0) // Set to past date to delete
+      sameSite: 'strict',
+      expires: new Date(0) // Expire immediately
     });
 
     return response;
   } catch (error) {
-    return NextResponse.json(
-      { success: false, message: 'Logout failed' },
-      { status: 500 }
-    );
+    return NextResponse.json({
+      success: false,
+      message: 'Logout failed'
+    }, { status: 500 });
   }
 }

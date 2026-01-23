@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState, AppDispatch } from '@/redux/store';
-import { loadUserFromStorage, fetchCurrentUser } from '@/redux/slices/authSlice';
+import { loadUserFromStorage, fetchCurrentUser, logoutUser } from '@/redux/slices/authSlice';
 import { 
   ChevronLeft, 
   ChevronRight, 
@@ -25,7 +25,8 @@ import {
   FileCheck,
   User,
   Shield,
-  Receipt
+  Receipt,
+  LogOut
 } from 'lucide-react';
 
 export default function Sidebar() {
@@ -47,6 +48,15 @@ export default function Sidebar() {
   // }, [user]);
 
   
+
+  const handleLogout = async () => {
+    try {
+      await dispatch(logoutUser()).unwrap();
+      window.location.href = '/login';
+    } catch (error) {
+      console.error('Logout failed:', error);
+    }
+  };
 
   const navItems = [
     { id: 'dashboard', label: 'Dashboard', icon: Home, href: '/' },
@@ -155,29 +165,20 @@ export default function Sidebar() {
         </ul>
       </nav>
 
-      {/* User Profile Section */}
+      {/* Logout Button */}
       {user && (
-        <div className="border-t border-slate-800 p-3">
-          <div className={`flex items-center gap-3 px-3 py-2 rounded-lg bg-slate-800 ${
-            collapsed ? 'justify-center' : ''
-          }`}>
-            <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center flex-shrink-0">
-              <User className="w-4 h-4 text-white" />
-            </div>
+        <div className="border-t border-slate-800 p-2">
+          <button
+            onClick={handleLogout}
+            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all text-slate-300 hover:bg-red-600 hover:text-white ${
+              collapsed ? 'justify-center' : ''
+            }`}
+          >
+            <LogOut className="w-5 h-5 flex-shrink-0" />
             {!collapsed && (
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-white truncate">
-                  {user.firstName} {user.lastName}
-                </p>
-                <p className="text-xs text-slate-400 truncate">
-                  {user.email}
-                </p>
-                <p className="text-xs text-blue-400 font-medium">
-                  {user.role || 'User'}
-                </p>
-              </div>
+              <span className="text-sm font-medium">Logout</span>
             )}
-          </div>
+          </button>
         </div>
       )}
 

@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
           .header { background: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 20px; }
           .estimate-details { background: #fff; border: 1px solid #dee2e6; border-radius: 8px; padding: 20px; margin-bottom: 20px; }
           .actions { text-align: center; margin: 30px 0; }
-          .btn { display: inline-block; padding: 12px 24px; color: white; text-decoration: none; border-radius: 4px; margin: 0 10px; font-weight: bold; }
+          .btn { display: inline-block; padding: 12px 24px; color: white !important; text-decoration: none; border-radius: 4px; margin: 0 10px; font-weight: bold; }
           .btn-accept { background: #28a745; }
           .btn-reject { background: #dc3545; }
           .footer { text-align: center; color: #6c757d; font-size: 14px; margin-top: 30px; }
