@@ -132,6 +132,32 @@ export const resetPassword = createAsyncThunk(
   }
 );
 
+export const logoutUser = createAsyncThunk(
+  'auth/logout',
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await fetch('/api/auth/logout', {
+        method: 'POST'
+      });
+      
+      if (!response.ok) {
+        const data = await response.json();
+        return rejectWithValue(data.message || 'Logout failed');
+      }
+      
+      const data = await response.json();
+      
+      if (!data.success) {
+        return rejectWithValue(data.message);
+      }
+      
+      return data;
+    } catch (error) {
+      return rejectWithValue('Logout failed');
+    }
+  }
+);
+
 export const fetchCurrentUser = createAsyncThunk(
   'auth/fetchCurrentUser',
   async (_, { rejectWithValue }) => {
@@ -290,6 +316,14 @@ const authSlice = createSlice({
         state.user = action.payload;
         if (typeof window !== 'undefined') {
           localStorage.setItem('user', JSON.stringify(action.payload));
+        }
+      })
+      // Logout user
+      .addCase(logoutUser.fulfilled, (state) => {
+        state.user = null;
+        if (typeof window !== 'undefined') {
+          localStorage.removeItem('user');
+          localStorage.removeItem('token');
         }
       });
   },
