@@ -3,7 +3,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { AlertCircle, ChevronDown, Copy, Send, Clock, CheckSquare, Share2, Repeat, Printer, FileText, XCircle, Trash2, Activity } from "lucide-react";
+import { AlertCircle, ChevronDown, Copy, Send, Clock, CheckSquare, Share2, Repeat, Printer, FileText, XCircle, Trash2, Activity, ArrowLeft } from "lucide-react";
 import { motion } from "framer-motion";
 import { format, differenceInDays } from "date-fns";
 import {
@@ -12,6 +12,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import InvoicesView from '@/components/portal/InvoicesView';
 
 const statusConfig = {
   draft: { label: 'Draft', className: 'bg-slate-100 text-slate-700 border-slate-200' },
@@ -23,6 +24,8 @@ const statusConfig = {
 export default function InvoiceList({ invoices, customers, onView, onSend, onFinalize, onMarkPaid, isLoading, onDuplicate, onSendReminder, onVoid, onDelete }) {
   const [selectedInvoices, setSelectedInvoices] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
+  const [showPortalView, setShowPortalView] = useState(false);
+  const [selectedInvoiceForView, setSelectedInvoiceForView] = useState(null);
   const itemsPerPage = 10;
 
   const getCustomerName = (customerId) => {
@@ -77,6 +80,30 @@ export default function InvoiceList({ invoices, customers, onView, onSend, onFin
     }
   };
 
+  const handleRowClick = (invoice) => {
+    setSelectedInvoiceForView(invoice);
+    setShowPortalView(true);
+  };
+
+  if (showPortalView) {
+    return (
+      <div className="space-y-4">
+        <Button 
+          variant="outline" 
+          onClick={() => {
+            setShowPortalView(false);
+            setSelectedInvoiceForView(null);
+          }}
+          className="gap-2"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          Back to Invoice List
+        </Button>
+        <InvoicesView userId={selectedInvoiceForView?.user_id} />
+      </div>
+    );
+  }
+
   return (
     <div className="bg-white border border-slate-200 rounded-lg overflow-hidden">
       <div className="overflow-x-auto">
@@ -129,12 +156,14 @@ export default function InvoiceList({ invoices, customers, onView, onSend, onFin
                     key={invoice.id}
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
-                    className="border-b border-slate-100 hover:bg-slate-50 transition-colors"
+                    className="border-b border-slate-100 hover:bg-slate-50 transition-colors cursor-pointer"
+                    onClick={() => handleRowClick(invoice)}
                   >
                     <TableCell>
                       <Checkbox
                         checked={isSelected}
                         onCheckedChange={(checked) => handleSelectInvoice(invoice.id, checked)}
+                        onClick={(e) => e.stopPropagation()}
                       />
                     </TableCell>
                     <TableCell className="text-sm text-slate-900">
@@ -170,7 +199,12 @@ export default function InvoiceList({ invoices, customers, onView, onSend, onFin
                     <TableCell>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button variant="link" size="sm" className="h-auto p-0 text-blue-600 hover:text-blue-700">
+                          <Button 
+                            variant="link" 
+                            size="sm" 
+                            className="h-auto p-0 text-blue-600 hover:text-blue-700"
+                            onClick={(e) => e.stopPropagation()}
+                          >
                             View/Edit | Receive payment
                             <ChevronDown className="w-3 h-3 ml-1" />
                           </Button>

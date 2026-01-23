@@ -23,7 +23,9 @@ import {
   Package,
   Truck,
   FileCheck,
-  User
+  User,
+  Shield,
+  Receipt
 } from 'lucide-react';
 
 export default function Sidebar() {
@@ -53,6 +55,8 @@ export default function Sidebar() {
     { id: 'estimates', label: 'Estimates', icon: FileText, href: '/estimates' },
     { id: 'jobs', label: 'Jobs', icon: Calendar, href: '/jobs' },
     { id: 'affidavits', label: 'Affidavits', icon: FileCheck, href: '/affidavits' },
+    { id: 'verify-document', label: 'Verify Document', icon: Shield, href: '/verify-document' },
+    { id: 'expenses', label: 'Expenses', icon: Receipt, href: '/expenses' },
     { id: 'customer-task', label: 'Task', icon: FileText, href: '/customer-task' },
     { id: 'customers', label: 'Customers', icon: Users, href: '/customers' },
     { id: 'vendors', label: 'Vendors', icon: Truck, href: '/vendors' },

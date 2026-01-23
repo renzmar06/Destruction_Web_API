@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/mongodb';
-import Customer from '@/models/Customer';
 import User from '@/models/User';
 import bcrypt from 'bcrypt';
 import { getUserFromRequest } from '@/lib/auth';
@@ -24,10 +23,10 @@ export async function GET(request: NextRequest) {
     
     if (user?.role === 'admin') {
       // Admin can see all customers
-      customers = await Customer.find().sort({ createdAt: -1 });
+      customers = await User.find({ role: 'customer' }).sort({ createdAt: -1 });
     } else {
-      // Regular users see only their customers
-      customers = await Customer.find({ user_id: userId }).sort({ createdAt: -1 });
+      // Regular users see only themselves
+      customers = await User.find({ _id: userId, role: 'customer' }).sort({ createdAt: -1 });
     }
 
     return NextResponse.json({ 
@@ -48,12 +47,8 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     await connectDB();
-    const { userId } = getUserFromRequest(request);
     const data = await request.json();
-    // Extract password from customer data
-    const { password, ...customerData } = data;
-    
-    if (!password) {
+    if (!data.password) {
       return NextResponse.json({ 
         success: false, 
         message: 'Password is required',
@@ -61,31 +56,24 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
     
-    // Hash password
-    const hashedPassword = await bcrypt.hash(password, 10);
+    // Hash password properly
+    const hashedPassword = await bcrypt.hash(data.password, 10);
     
-    // Create user account
+    // Create user with customer role and all customer data
     const user = new User({
-      name: customerData.display_name || `${customerData.first_name} ${customerData.last_name}`.trim(),
-      email: customerData.email,
-      password: hashedPassword,
+      ...data, // Include all customer fields first
+      name: data.display_name || `${data.first_name} ${data.last_name}`.trim(),
+      email: data.email,
+      password: hashedPassword, // Override with hashed password
       role: 'customer'
     });
     
     const savedUser = await user.save();
-    console.log("fgfdgfddfg",savedUser  )
-    // Create customer with user_id reference
-    const customer = new Customer({
-      ...customerData,
-      user_id: savedUser._id
-    });
-    
-    const savedCustomer = await customer.save();
     
     return NextResponse.json({ 
       success: true, 
       message: 'Customer created successfully',
-      data: savedCustomer 
+      data: savedUser 
     }, { status: 201 });
   } catch (error: any) {
     console.error('Error creating customer:', error);

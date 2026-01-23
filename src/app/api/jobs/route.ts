@@ -27,7 +27,7 @@ export async function GET(request: NextRequest) {
       jobs = await Job.find().sort({ createdAt: -1 });
     } else {
       // Regular users see only their jobs
-      jobs = await Job.find({ user_id: userId }).sort({ createdAt: -1 });
+      jobs = await Job.find({ customer_id: userId }).sort({ createdAt: -1 });
     }
 
     return NextResponse.json({ 

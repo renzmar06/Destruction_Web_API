@@ -8,6 +8,7 @@ import invoicesReducer from './slices/invoicesSlice';
 import servicesReducer from './slices/servicesSlice';
 import vendorsReducer from './slices/vendorsSlice';
 import affidavitsReducer from './slices/affidavitsSlice';
+import expensesReducer from './slices/expensesSlice';
 
 export const store = configureStore({
   reducer: {
@@ -20,6 +21,7 @@ export const store = configureStore({
     services: servicesReducer,
     vendors: vendorsReducer,
     affidavits: affidavitsReducer,
+    expenses: expensesReducer,
   },
 });
 

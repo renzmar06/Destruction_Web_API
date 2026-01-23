@@ -31,58 +31,58 @@ interface Customer {
   _id?: string;
   id?: string;
   user_id?: string;
-  title: string;
-  first_name: string;
-  middle_name: string;
-  last_name: string;
-  suffix: string;
-  legal_company_name: string;
-  display_name: string;
-  email: string;
+  title?: string;
+  first_name?: string;
+  middle_name?: string;
+  last_name?: string;
+  suffix?: string;
+  legal_company_name?: string;
+  display_name?: string;
+  email?: string;
   password?: string;
-  phone: string;
-  cc_email: string;
-  bcc_email: string;
-  mobile: string;
-  fax: string;
-  other_contact: string;
-  website: string;
-  print_on_check_name: string;
-  is_sub_customer: boolean;
-  email_marketing_consent: boolean;
-  billing_street_1: string;
-  billing_street_2: string;
-  billing_city: string;
-  billing_state: string;
-  billing_zip: string;
-  billing_country: string;
-  shipping_same_as_billing: boolean;
-  shipping_street_1: string;
-  shipping_street_2: string;
-  shipping_city: string;
-  shipping_state: string;
-  shipping_zip: string;
-  shipping_country: string;
-  primary_payment_method: string;
-  payment_terms: string;
-  delivery_method: string;
-  invoice_language: string;
-  credit_limit: number;
-  customer_type: string;
-  tax_exempt: boolean;
-  tax_rate_id: string;
-  opening_balance: number;
-  opening_balance_date: string;
-  customer_role: string;
-  primary_product_type: string;
-  requires_certificate: boolean;
-  requires_affidavit: boolean;
-  requires_photo_video_proof: boolean;
-  witness_required: boolean;
-  scrap_resale_allowed: boolean;
-  special_handling_notes: string;
-  internal_notes: string;
-  customer_status: "active" | "on_hold" | "archived";
+  phone?: string;
+  cc_email?: string;
+  bcc_email?: string;
+  mobile?: string;
+  fax?: string;
+  other_contact?: string;
+  website?: string;
+  print_on_check_name?: string;
+  is_sub_customer?: boolean;
+  email_marketing_consent?: boolean;
+  billing_street_1?: string;
+  billing_street_2?: string;
+  billing_city?: string;
+  billing_state?: string;
+  billing_zip?: string;
+  billing_country?: string;
+  shipping_same_as_billing?: boolean;
+  shipping_street_1?: string;
+  shipping_street_2?: string;
+  shipping_city?: string;
+  shipping_state?: string;
+  shipping_zip?: string;
+  shipping_country?: string;
+  primary_payment_method?: string;
+  payment_terms?: string;
+  delivery_method?: string;
+  invoice_language?: string;
+  credit_limit?: number;
+  customer_type?: string;
+  tax_exempt?: boolean;
+  tax_rate_id?: string;
+  opening_balance?: number;
+  opening_balance_date?: string;
+  customer_role?: string;
+  primary_product_type?: string;
+  requires_certificate?: boolean;
+  requires_affidavit?: boolean;
+  requires_photo_video_proof?: boolean;
+  witness_required?: boolean;
+  scrap_resale_allowed?: boolean;
+  special_handling_notes?: string;
+  internal_notes?: string;
+  customer_status?: "active" | "on_hold" | "archived";
 }
 
 /* ======================================================
@@ -172,14 +172,14 @@ function CustomersPageContent() {
 
   useEffect(() => {
     const id = searchParams.get("customer_id");
-    if (id) {
+    if (id && customers.length > 0) {
       const customer = customers.find((c) => c._id === id || c.id === id);
-      if (customer) {
+      if (customer && !showDetailView) {
         setViewingCustomer(customer);
         setShowDetailView(true);
       }
     }
-  }, [searchParams, customers]);
+  }, [searchParams, customers, showDetailView]);
 
   /* ======================================================
      ACTIONS

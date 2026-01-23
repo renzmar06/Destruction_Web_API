@@ -19,15 +19,16 @@ const statusConfig = {
   partially_paid: { label: 'Partially Paid', className: 'bg-amber-100 text-amber-700' }
 };
 
-export default function InvoicesView({ customerId, customerEmail }) {
+export default function InvoicesView({ userId=null }) {
   const { invoices, loading } = useAppSelector(state => state.invoices);
   
   // Filter invoices for the specific customer by ID, email, or user_id
   const customerInvoices = invoices.filter(invoice => {
-    const matchById = invoice.customer_id === customerId;
+    if(userId === null){
+      return true;
+    }
   
-    const matchByUserId = invoice.user_id === customerId;
-    return matchById ||  matchByUserId;
+    return invoice.customer_id === userId;
   });
   
   const [selectedInvoice, setSelectedInvoice] = useState(null);
