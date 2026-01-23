@@ -23,7 +23,7 @@ export default function JobsView({ userId=null }) {
     if (userId === null) {
       return true; // Show all jobs if userId is null
     }
-    return job.user_id === userId;
+    return job.customer_id === userId;
   });
   const isLoading = loading;
   if (isLoading) {

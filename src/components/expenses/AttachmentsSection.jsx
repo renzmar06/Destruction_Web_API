@@ -1,10 +1,8 @@
-import React, { useState, useRef } from 'react';
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { base44 } from "@/api/base44Client";
+import React, { useState, useRef, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import { Paperclip, Upload, Trash2, FileText, Image as ImageIcon, Download } from "lucide-react";
+import { Paperclip, Upload, Trash2, FileText, Download } from "lucide-react";
 
 const attachmentTypeLabels = {
   vendor_invoice: 'Vendor Invoice',
@@ -15,42 +13,56 @@ const attachmentTypeLabels = {
 export default function AttachmentsSection({ expenseId, isReadOnly }) {
   const [uploading, setUploading] = useState(false);
   const [attachmentType, setAttachmentType] = useState('vendor_invoice');
+  const [attachments, setAttachments] = useState([]);
   const fileInputRef = useRef(null);
-  const queryClient = useQueryClient();
 
-  const { data: attachments = [] } = useQuery({
-    queryKey: ['expenseAttachments', expenseId],
-    queryFn: () => expenseId ? base44.entities.ExpenseAttachment.filter({ expense_id: expenseId }) : [],
-    enabled: !!expenseId
-  });
-
-  const deleteMutation = useMutation({
-    mutationFn: (id) => base44.entities.ExpenseAttachment.delete(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['expenseAttachments', expenseId] });
+  useEffect(() => {
+    if (expenseId) {
+      fetchAttachments();
     }
-  });
+  }, [expenseId]);
+
+  const fetchAttachments = async () => {
+    try {
+      const response = await fetch(`/api/expenses/${expenseId}`);
+      const result = await response.json();
+      if (result.success && result.data.attachments) {
+        setAttachments(result.data.attachments);
+      }
+    } catch (error) {
+      console.error('Error fetching attachments:', error);
+    }
+  };
 
   const handleFileUpload = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    console.log('Starting file upload:', file.name, 'for expense:', expenseId);
     setUploading(true);
     try {
-      const { file_url } = await base44.integrations.Core.UploadFile({ file });
-      
-      await base44.entities.ExpenseAttachment.create({
-        expense_id: expenseId,
-        attachment_type: attachmentType,
-        file_url,
-        file_name: file.name,
-        upload_timestamp: new Date().toISOString()
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('attachmentType', attachmentType);
+
+      console.log('Uploading to:', `/api/expenses/${expenseId}/attachments`);
+      const response = await fetch(`/api/expenses/${expenseId}/attachments`, {
+        method: 'POST',
+        body: formData,
       });
 
-      queryClient.invalidateQueries({ queryKey: ['expenseAttachments', expenseId] });
+      const result = await response.json();
+      console.log('Upload response:', result);
       
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
+      if (result.success) {
+        setAttachments(prev => [...prev, result.data]);
+        if (fileInputRef.current) {
+          fileInputRef.current.value = '';
+        }
+        console.log('File uploaded successfully');
+      } else {
+        console.error('Upload failed:', result.message);
+        alert(result.message || 'Upload failed');
       }
     } catch (error) {
       console.error('Upload failed:', error);
@@ -62,7 +74,7 @@ export default function AttachmentsSection({ expenseId, isReadOnly }) {
 
   const handleDelete = (attachment) => {
     if (confirm('Delete this attachment?')) {
-      deleteMutation.mutate(attachment.id);
+      console.log('Deleting attachment:', attachment.filename);
     }
   };
 
@@ -104,6 +116,7 @@ export default function AttachmentsSection({ expenseId, isReadOnly }) {
                   type="file"
                   onChange={handleFileUpload}
                   className="hidden"
+                  accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
                 />
                 <Button
                   onClick={() => fileInputRef.current?.click()}
@@ -136,34 +149,24 @@ export default function AttachmentsSection({ expenseId, isReadOnly }) {
             <p className="text-sm">No attachments yet</p>
           </div>
         ) : (
-          attachments.map((attachment) => (
-            <div key={attachment.id} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg border border-slate-200">
+          attachments.map((attachment, index) => (
+            <div key={index} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg border border-slate-200">
               <div className="flex items-center gap-3">
                 <FileText className="w-5 h-5 text-slate-600" />
                 <div>
-                  <p className="font-medium text-slate-900 text-sm">{attachment.file_name}</p>
-                  <p className="text-xs text-slate-500">{attachmentTypeLabels[attachment.attachment_type]}</p>
+                  <p className="font-medium text-slate-900 text-sm">{attachment.filename}</p>
+                  <p className="text-xs text-slate-500">{attachmentTypeLabels[attachment.attachmentType] || 'Document'}</p>
                 </div>
               </div>
               <div className="flex items-center gap-2">
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => window.open(attachment.file_url, '_blank')}
+                  onClick={() => window.open(attachment.url, '_blank')}
                   className="h-8 w-8 p-0"
                 >
                   <Download className="w-4 h-4" />
                 </Button>
-                {!isReadOnly && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handleDelete(attachment)}
-                    className="h-8 w-8 p-0 text-red-600 hover:text-red-700"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
-                )}
               </div>
             </div>
           ))

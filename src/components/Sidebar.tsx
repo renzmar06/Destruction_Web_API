@@ -23,7 +23,9 @@ import {
   Package,
   Truck,
   FileCheck,
-  User
+  User,
+  Shield,
+  Receipt
 } from 'lucide-react';
 
 export default function Sidebar() {
@@ -53,6 +55,8 @@ export default function Sidebar() {
     { id: 'estimates', label: 'Estimates', icon: FileText, href: '/estimates' },
     { id: 'jobs', label: 'Jobs', icon: Calendar, href: '/jobs' },
     { id: 'affidavits', label: 'Affidavits', icon: FileCheck, href: '/affidavits' },
+    { id: 'verify-document', label: 'Verify Document', icon: Shield, href: '/verify-document' },
+    { id: 'expenses', label: 'Expenses', icon: Receipt, href: '/expenses' },
     { id: 'customer-task', label: 'Task', icon: FileText, href: '/customer-task' },
     { id: 'customers', label: 'Customers', icon: Users, href: '/customers' },
     { id: 'vendors', label: 'Vendors', icon: Truck, href: '/vendors' },
@@ -66,6 +70,7 @@ export default function Sidebar() {
     { id: 'customer-estimates', label: 'My Estimates', icon: FileText, href: '/customer-estimates' },
     { id: 'customer-jobs', label: 'My Jobs', icon: Calendar, href: '/customer-jobs' },
     { id: 'customer-invoices', label: 'My Invoices', icon: DollarSign, href: '/customer-invoices' },
+     { id: 'customer-document', label: 'My document', icon: DollarSign, href: '/customer-document' },
     // { id: 'customer-messages', label: 'Messages', icon: MessageSquare, href: '/customer-messages' }
   ];
 

@@ -28,6 +28,7 @@ interface ServiceRequest {
   quantityBreakdown?: string;
   scheduleFrequency?: string;
   problemDescription?: string;
+  attachments?: string[];
   status: string;
   createdAt: string;
   updatedAt: string;

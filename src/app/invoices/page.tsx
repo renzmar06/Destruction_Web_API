@@ -8,6 +8,7 @@ import InvoiceList from '@/components/invoices/InvoiceList';
 
 export interface Invoice {
   _id?: string;
+  user_id: string;
   invoice_number: string;
   customer_id?: string;
   customer_name: string;
@@ -65,6 +66,7 @@ export default function Invoices() {
   const [attachments, setAttachments] = useState<{id: number, name: string, url: string}[]>([]);
   const [uploading, setUploading] = useState(false);
   const [formData, setFormData] = useState<Partial<Invoice>>({
+    user_id: '',
     invoice_number: '',
     customer_name: '',
     customer_email: '',
@@ -400,6 +402,7 @@ export default function Invoices() {
                     const customer = customers.find(c => c.legal_company_name === e.target.value);
                     setFormData({
                       ...formData, 
+                      customer_id: customer?._id, // Set customer_id instead of user_id
                       customer_name: e.target.value,
                       customer_email: customer?.email || ''
                     });
