@@ -1,6 +1,7 @@
 import mongoose, { Schema, Document } from 'mongoose';
 
 export interface IServiceRequest extends Document {
+  user_id: mongoose.Types.ObjectId;
   requestNumber: string;
   serviceType: string;
   productType: string;
@@ -28,6 +29,11 @@ export interface IServiceRequest extends Document {
   scheduleFrequency?: string;
   problemDescription?: string;
   attachments?: string[];
+  messages?: Array<{
+    message: string;
+    sentBy: string;
+    timestamp: Date;
+  }>;
   status: string;
   createdAt: Date;
   updatedAt: Date;
@@ -62,6 +68,11 @@ const ServiceRequestSchema: Schema = new Schema({
   scheduleFrequency: { type: String },
   problemDescription: { type: String },
   attachments: [{ type: String }],
+  messages: [{
+    message: { type: String, required: true },
+    sentBy: { type: String, required: true },
+    timestamp: { type: Date, default: Date.now }
+  }],
   status: { type: String, required: true, default: 'pending' }
 }, {
   timestamps: true

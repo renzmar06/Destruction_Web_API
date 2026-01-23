@@ -1,10 +1,14 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, User, Phone, Edit, Trash2 } from "lucide-react";
+import { Plus, User, Phone, Edit, Trash2, Send } from "lucide-react";
+import { toast } from 'sonner';
+import { sendMessage, clearError } from '@/redux/slices/messagesSlice';
+import { RootState, AppDispatch } from '@/redux/store';
 
 interface ViewDetailProps {
   selectedRequest: any;
@@ -15,7 +19,36 @@ interface ViewDetailProps {
 }
 
 export default function ViewDetail({ selectedRequest, onBack, onNewRequest, onEdit, onDelete }: ViewDetailProps) {
+  const dispatch = useDispatch<AppDispatch>();
+  const { loading: sendingMessage, error } = useSelector((state: RootState) => state.messages);
+  
   const [attachments, setAttachments] = useState(selectedRequest.attachments || []);
+  const [messages, setMessages] = useState(selectedRequest.messages || []);
+  const [newMessage, setNewMessage] = useState('');
+
+  useEffect(() => {
+    if (error) {
+      toast.error(error);
+      dispatch(clearError());
+    }
+  }, [error, dispatch]);
+
+  const handleSendMessage = async () => {
+    if (!newMessage.trim()) return;
+    
+    try {
+      const result = await dispatch(sendMessage({
+        requestId: selectedRequest._id || selectedRequest.id,
+        message: newMessage
+      })).unwrap();
+      
+      setMessages((prev: any[]) => [...prev, result]);
+      setNewMessage('');
+      toast.success('Message sent successfully');
+    } catch (error) {
+      // Error is handled by useEffect
+    }
+  };
   return (
     <>
       {/* Header */}
@@ -126,8 +159,55 @@ export default function ViewDetail({ selectedRequest, onBack, onNewRequest, onEd
             </div>
           </TabsContent>
 
-          <TabsContent value="messages" className="px-6 py-8 text-center text-slate-500">
-            No messages yet.
+          <TabsContent value="messages" className="px-6 py-4">
+            <div className="space-y-4">
+              {/* Messages List */}
+              <div className="max-h-96 overflow-y-auto space-y-3">
+                {messages.length === 0 ? (
+                  <p className="text-center text-slate-500 py-8">No messages yet.</p>
+                ) : (
+                  messages.map((msg: any, index: number) => (
+                    <div key={index} className={`rounded-lg p-3 max-w-xs ml-auto ${
+                      msg.sentBy === 'You' ? 'bg-blue-300' : 'bg-blue-500'
+                    }`}>
+                      <div className="flex justify-between items-start mb-2">
+                        <span className="font-medium text-white">{msg.sentBy}</span>
+                        <span className="text-xs text-white">
+                          {new Date(msg.timestamp).toLocaleString()}
+                        </span>
+                      </div>
+                      <p className="text-white">{msg.message}</p>
+                    </div>
+                  ))
+                )}
+              </div>
+              
+              {/* Message Input */}
+              <div className="border-t pt-4">
+                <div className="flex gap-2">
+                  <textarea
+                    value={newMessage}
+                    onChange={(e) => setNewMessage(e.target.value)}
+                    placeholder="Type your message..."
+                    className="flex-1 p-2 border border-slate-300 rounded-lg resize-none"
+                    rows={2}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        handleSendMessage();
+                      }
+                    }}
+                  />
+                  <Button
+                    onClick={handleSendMessage}
+                    disabled={!newMessage.trim() || sendingMessage}
+                    className="bg-blue-600 hover:bg-blue-700"
+                  >
+                    <Send className="w-4 h-4" />
+                  </Button>
+                </div>
+              </div>
+            </div>
           </TabsContent>
 
           <TabsContent value="files" className="px-6 py-4">
