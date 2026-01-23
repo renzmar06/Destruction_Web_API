@@ -21,7 +21,7 @@ const statusConfig = {
   paid: { label: 'Paid', className: 'bg-green-100 text-green-700 border-green-200' }
 };
 
-export default function InvoiceList({ invoices, customers, onView, onSend, onFinalize, onMarkPaid, isLoading, onDuplicate, onSendReminder, onVoid, onDelete }) {
+export default function InvoiceList({ invoices, customers, onView, onSend, onFinalize, onMarkPaid, isLoading, onDuplicate, onSendReminder, onVoid, onDelete, sendingInvoice }) {
   const [selectedInvoices, setSelectedInvoices] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [showPortalView, setShowPortalView] = useState(false);
@@ -220,7 +220,13 @@ export default function InvoiceList({ invoices, customers, onView, onSend, onFin
                           </DropdownMenuItem>
                           
                           {(invoice.invoice_status === 'draft' || invoice.invoice_status === 'sent') && (
-                            <DropdownMenuItem onClick={() => onSend(invoice)}>
+                            <DropdownMenuItem 
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onSend(invoice);
+                              }}
+                              disabled={sendingInvoice === invoice.id}
+                            >
                               <Send className="w-4 h-4 mr-2" />
                               Send
                             </DropdownMenuItem>
@@ -340,6 +346,17 @@ export default function InvoiceList({ invoices, customers, onView, onSend, onFin
           </Button>
         </div>
       </div>
+
+      {/* Send Email Modal */}
+      {sendingInvoice && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-8 max-w-sm w-full mx-4 text-center">
+            <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+            <h3 className="text-lg font-semibold text-slate-900 mb-2">Sending Invoice</h3>
+            <p className="text-slate-600">Please wait while we send your invoice...</p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

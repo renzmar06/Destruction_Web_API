@@ -21,10 +21,22 @@ import {
   CalendarDays,
   Phone,
   ChevronRight,
+  ArrowLeft,
+  User,
+  MapPin,
+  Package,
+  Zap
 } from "lucide-react";
 
 /* Components */
 import CalendarView from "@/components/service-requests/CalendarView";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import { toast } from "sonner";
+import { Toaster } from "@/components/ui/sonner";
 
 /* ======================================================
    TYPES
@@ -47,28 +59,30 @@ interface ServiceRequest {
   requestNumber: string;
   serviceType: string;
   productType: string;
+  estimatedWeight?: string;
   preferredDate: string;
   createdAt: string;
   contactName: string;
   contactPhone: string;
   urgency?: Urgency;
   status: RequestStatus;
-  admin_notes?: string;
+  user_id?: string;
+  adminNotes?: string;
 }
 
 /* ======================================================
    CONFIG
 ====================================================== */
 
-const statusConfig: Record<RequestStatus, { label: string; className: string }> =
+const statusConfig: Record<RequestStatus, { label: string; className: string; icon: any }> =
   {
-    pending: { label: "Pending Review", className: "bg-amber-100 text-amber-700" },
-    in_review: { label: "In Review", className: "bg-blue-100 text-blue-700" },
-    quoted: { label: "Quote Sent", className: "bg-purple-100 text-purple-700" },
-    approved: { label: "Approved", className: "bg-green-100 text-green-700" },
-    in_progress: { label: "In Progress", className: "bg-indigo-100 text-indigo-700" },
-    completed: { label: "Completed", className: "bg-slate-100 text-slate-700" },
-    cancelled: { label: "Cancelled", className: "bg-red-100 text-red-700" },
+    pending: { label: "Pending Review", className: "bg-amber-100 text-amber-700", icon: Clock },
+    in_review: { label: "In Review", className: "bg-blue-100 text-blue-700", icon: AlertCircle },
+    quoted: { label: "Quote Sent", className: "bg-purple-100 text-purple-700", icon: FileText },
+    approved: { label: "Approved", className: "bg-green-100 text-green-700", icon: Briefcase },
+    in_progress: { label: "In Progress", className: "bg-indigo-100 text-indigo-700", icon: Zap },
+    completed: { label: "Completed", className: "bg-slate-100 text-slate-700", icon: ClipboardList },
+    cancelled: { label: "Cancelled", className: "bg-red-100 text-red-700", icon: AlertCircle },
   };
 
 const urgencyConfig: Record<Urgency, { label: string; className: string }> = {
@@ -125,80 +139,166 @@ export default function ServiceRequestsPage() {
   ====================================================== */
 
   if (selectedRequest) {
-    const status = statusConfig[selectedRequest.status as keyof typeof statusConfig] || statusConfig.pending;
+    const config = statusConfig[selectedRequest.status] || statusConfig.pending;
+    const Icon = config.icon;
 
     return (
       <div className="min-h-screen bg-slate-50">
         <div className="max-w-4xl mx-auto px-4 py-8">
-          <button onClick={() => setSelectedRequest(null)} className="px-4 py-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-md transition-colors">
-            ← Back to Requests
-          </button>
+          <Button 
+            variant="ghost" 
+            onClick={() => setSelectedRequest(null)}
+            className="mb-4"
+          >
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Back to All Requests
+          </Button>
 
-          <div className="mt-4 rounded-lg border bg-white shadow-sm">
-            <div className="p-8 space-y-6">
-              <div className="flex items-center gap-3">
-                <h2 className="text-2xl font-bold">
-                  Request #{selectedRequest.requestNumber}
-                </h2>
-                <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${status.className}`}>{status.label}</span>
-                <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${urgencyConfig[selectedRequest.urgency || 'normal'].className}`}>
-                  {urgencyConfig[selectedRequest.urgency || 'normal'].label}
-                </span>
-              </div>
-
-              <div className="grid grid-cols-2 gap-6">
+          <Card>
+            <CardContent className="p-8 space-y-6">
+              {/* Header */}
+              <div className="flex items-start justify-between pb-6 border-b">
                 <div>
-                  <p className="font-semibold">Contact Name</p>
-                  <p>{selectedRequest.contactName}</p>
-                </div>
-                <div>
-                  <p className="font-semibold">Preferred Date</p>
-                  <p>
-                    {selectedRequest.preferredDate ? format(
-                      parseISO(selectedRequest.preferredDate),
-                      "MMM d, yyyy"
-                    ) : 'Not specified'}
+                  <div className="flex items-center gap-3 mb-2">
+                    <h2 className="text-2xl font-bold text-slate-900">
+                      Request #{selectedRequest.requestNumber}
+                    </h2>
+                    <Badge className={config.className}>
+                      <Icon className="w-3 h-3 mr-1" />
+                      {config.label}
+                    </Badge>
+                    <Badge className={urgencyConfig[selectedRequest.urgency || 'normal']?.className}>
+                      {urgencyConfig[selectedRequest.urgency || 'normal']?.label}
+                    </Badge>
+                  </div>
+                  <p className="text-slate-600">{selectedRequest.contactName}</p>
+                  <p className="text-sm text-slate-500">
+                    Submitted: {selectedRequest.createdAt ? format(new Date(selectedRequest.createdAt), 'MMM d, yyyy h:mm a') : 'N/A'}
                   </p>
                 </div>
               </div>
 
-              <div>
-                <p className="font-semibold mb-1">Admin Notes</p>
-                <textarea
-                  value={adminNotes}
-                  onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setAdminNotes(e.target.value)}
-                  placeholder="Internal notes…"
-                  className="w-full px-3 py-2 border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  rows={4}
-                />
+              {/* Request Details */}
+              <div className="grid grid-cols-2 gap-6">
+                <div className="space-y-4">
+                  <div>
+                    <p className="text-sm font-semibold text-slate-700 mb-1">Service Type</p>
+                    <p className="text-slate-900 capitalize">{selectedRequest.serviceType?.replace(/_/g, ' ')}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-slate-700 mb-1">Product Type</p>
+                    <p className="text-slate-900 capitalize">{selectedRequest.productType?.replace(/_/g, ' ')}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-slate-700 mb-1">Estimated Weight</p>
+                    <p className="text-slate-900">{selectedRequest.estimatedWeight || 'Not specified'}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-slate-700 mb-1">Preferred Date</p>
+                    <p className="text-slate-900">{selectedRequest.preferredDate ? format(new Date(selectedRequest.preferredDate), 'MMM d, yyyy') : 'Not specified'}</p>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <div>
+                    <p className="text-sm font-semibold text-slate-700 mb-1">Contact</p>
+                    <p className="text-slate-900">{selectedRequest.contactName}</p>
+                    <p className="text-slate-600 text-sm">{selectedRequest.contactPhone}</p>
+                  </div>
+                </div>
               </div>
 
-              <div className="flex gap-3">
-                <button
-                  className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md flex items-center gap-2 transition-colors"
-                  onClick={() =>
-                    router.push(
-                      `/estimates?customer_id=${selectedRequest.contactName}`
-                    )
-                  }
-                >
-                  <FileText className="w-4 h-4" />
-                  Create Estimate
-                </button>
-                <button
-                  className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md flex items-center gap-2 transition-colors"
-                  onClick={() =>
-                    router.push(
-                      `/jobs?customer_id=${selectedRequest.contactName}`
-                    )
-                  }
-                >
-                  <Briefcase className="w-4 h-4" />
-                  Create Job
-                </button>
+              {/* Admin Actions */}
+              <div className="border-t pt-6 space-y-4">
+                <h3 className="font-semibold text-slate-900">Admin Actions</h3>
+                
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-slate-700">Update Status</label>
+                  <Select
+                    value={selectedRequest.status}
+                    onValueChange={(status) => {
+                      setSelectedRequest({...selectedRequest, status: status as RequestStatus});
+                    }}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="pending">Pending Review</SelectItem>
+                      <SelectItem value="in_review">In Review</SelectItem>
+                      <SelectItem value="quoted">Quote Sent</SelectItem>
+                      <SelectItem value="approved">Approved</SelectItem>
+                      <SelectItem value="in_progress">In Progress</SelectItem>
+                      <SelectItem value="completed">Completed</SelectItem>
+                      <SelectItem value="cancelled">Cancelled</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-slate-700">Admin Notes (Internal)</label>
+                  <textarea
+                    value={adminNotes || ''}
+                    onChange={(e) => setAdminNotes(e.target.value)}
+                    placeholder="Add internal notes about this request..."
+                    rows={4}
+                    className="flex min-h-[60px] w-full rounded-md border border-input bg-transparent px-3 py-2 text-base shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
+                  />
+                  <Button
+                    onClick={async () => {
+                      try {
+                        const response = await fetch(`/api/customer-requests/${selectedRequest._id || selectedRequest.id}`, {
+                          method: 'PUT',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ 
+                            adminNotes, 
+                            status: selectedRequest.status,
+                            notifyCustomer: true 
+                          })
+                        });
+                        
+                        const data = await response.json();
+                        
+                        if (data.success) {
+                          toast.success('Status updated and customer notified!');
+                          setAdminNotes('');
+                          setSelectedRequest(null);
+                          dispatch(fetchServiceRequests());
+                        } else {
+                          toast.error('Failed to update status');
+                        }
+                      } catch (error) {
+                        toast.error('Error occurred while updating status');
+                      }
+                    }}
+                    disabled={!adminNotes}
+                    className="bg-blue-600 hover:bg-blue-700 disabled:bg-slate-300 gap-2"
+                    size="sm"
+                  >
+                    <FileText className="w-4 h-4" />
+                    Save & Notify Customer
+                  </Button>
+                </div>
+
+                <div className="flex gap-3 pt-4">
+                  <Button
+                    onClick={() => router.push(`/estimates?customer_id=${selectedRequest.contactName}`)}
+                    className="bg-blue-600 hover:bg-blue-700 gap-2"
+                  >
+                    <FileText className="w-4 h-4" />
+                    Create Estimate
+                  </Button>
+                  <Button
+                    onClick={() => router.push(`/jobs?customer_id=${selectedRequest.contactName}`)}
+                    className="bg-green-600 hover:bg-green-700 gap-2"
+                  >
+                    <Briefcase className="w-4 h-4" />
+                    Create Job
+                  </Button>
+                </div>
               </div>
-            </div>
-          </div>
+            </CardContent>
+          </Card>
         </div>
       </div>
     );
@@ -448,8 +548,8 @@ export default function ServiceRequestsPage() {
                         </div>
                         <p className="text-slate-700 font-medium mb-1">{r.contactName}</p>
                         <div className="flex items-center gap-4 text-sm text-slate-500">
-                          <span>Preferred: {r.preferredDate ? format(parseISO(r.preferredDate), "MMM d, yyyy") : 'Not specified'}</span>
-                          <span>Submitted: {format(parseISO(r.createdAt), "MMM d, yyyy")}</span>
+                          <span>Preferred: {r.preferredDate ? format(new Date(r.preferredDate), "MMM d, yyyy") : 'Not specified'}</span>
+                          <span>Submitted: {format(new Date(r.createdAt), "MMM d, yyyy")}</span>
                         </div>
                       </div>
                       
@@ -474,6 +574,7 @@ export default function ServiceRequestsPage() {
           </div>
         )}
       </div>
+      <Toaster />
     </div>
   );
 }
