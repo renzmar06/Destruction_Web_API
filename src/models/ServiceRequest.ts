@@ -27,6 +27,7 @@ export interface IServiceRequest extends Document {
   quantityBreakdown?: string;
   scheduleFrequency?: string;
   problemDescription?: string;
+  attachments?: string[];
   status: string;
   createdAt: Date;
   updatedAt: Date;
@@ -60,6 +61,7 @@ const ServiceRequestSchema: Schema = new Schema({
   quantityBreakdown: { type: String },
   scheduleFrequency: { type: String },
   problemDescription: { type: String },
+  attachments: [{ type: String }],
   status: { type: String, required: true, default: 'pending' }
 }, {
   timestamps: true

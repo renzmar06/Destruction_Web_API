@@ -34,7 +34,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Generate request number
-    const requestNumber = `REQ-${Date.now().toString().slice(-6)}`;
+    const requestNumber = `SR-${Date.now().toString().slice(-6)}`;
     
     // Create service request
     const serviceRequest = new ServiceRequest({
@@ -64,6 +64,7 @@ export async function POST(request: NextRequest) {
       quantityBreakdown: body.quantityBreakdown,
       scheduleFrequency: body.scheduleFrequency,
       problemDescription: body.problemDescription,
+      attachments: body.attachments || [],
       status: body.isDraft ? 'draft' : 'pending',
       user_id: userId
     });
