@@ -92,7 +92,7 @@ export default function LoginPage() {
             <p className="text-sm font-medium text-slate-700 mb-2">Demo Accounts:</p>
             <div className="space-y-1 text-xs text-slate-600">
               <p>Admin: admin@destructionops.com / admin123</p>
-              <p>Customer: customer@destructionops.com / customer123</p>
+              <p>Customer: kanopatel3364@gmail.com / 123123123</p>
             </div>
           </div>
         </CardContent>

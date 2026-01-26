@@ -59,6 +59,11 @@ export interface User {
   special_handling_notes?: string;
   internal_notes?: string;
   customer_status?: string;
+  bank_account_holder?: string;
+  bank_name?: string;
+  bank_routing_number?: string;
+  bank_account_number?: string;
+  bank_account_type?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -96,6 +101,7 @@ const UserSchema = new mongoose.Schema({
   last_name: { type: String },
   suffix: { type: String, default: '' },
   legal_company_name: { type: String, default: '' },
+  logo_url: { type: String, default: '' },
   display_name: { type: String },
   phone: { type: String, default: '' },
   cc_email: { type: String, default: '' },
@@ -143,7 +149,12 @@ const UserSchema = new mongoose.Schema({
     type: String, 
     enum: ['active', 'on_hold', 'archived'], 
     default: 'active' 
-  }
+  },
+  bank_account_holder: { type: String, default: '' },
+  bank_name: { type: String, default: '' },
+  bank_routing_number: { type: String, default: '' },
+  bank_account_number: { type: String, default: '' },
+  bank_account_type: { type: String, default: 'checking' }
 }, {
   timestamps: true,
 });
