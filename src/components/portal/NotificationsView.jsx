@@ -1,6 +1,4 @@
-import React, { useState } from 'react';
-import { base44 } from "@/api/base44Client";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -9,50 +7,62 @@ import { format } from "date-fns";
 import { motion } from "framer-motion";
 
 const notificationTypeConfig = {
-  status_change: { icon: AlertCircle, color: 'text-blue-600', bg: 'bg-blue-50' },
-  admin_notes_added: { icon: MessageSquare, color: 'text-purple-600', bg: 'bg-purple-50' },
-  request_submitted: { icon: CheckCircle, color: 'text-green-600', bg: 'bg-green-50' },
-  upcoming_service: { icon: Calendar, color: 'text-amber-600', bg: 'bg-amber-50' },
-  delay_notification: { icon: Clock, color: 'text-red-600', bg: 'bg-red-50' },
-  issue_reported: { icon: AlertCircle, color: 'text-red-600', bg: 'bg-red-50' },
-  feedback_request: { icon: MessageSquare, color: 'text-indigo-600', bg: 'bg-indigo-50' }
+  service_request_update: { icon: AlertCircle, color: 'text-blue-600', bg: 'bg-blue-50' },
+  general: { icon: MessageSquare, color: 'text-purple-600', bg: 'bg-purple-50' },
+  system: { icon: CheckCircle, color: 'text-green-600', bg: 'bg-green-50' }
 };
 
 export default function NotificationsView({ customerId }) {
   const [filter, setFilter] = useState('all');
-  const queryClient = useQueryClient();
+  const [notifications, setNotifications] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const { data: notifications = [], isLoading } = useQuery({
-    queryKey: ['customerNotifications', customerId],
-    queryFn: () => base44.entities.Notification.filter({ customer_id: customerId }, '-created_date')
-  });
+  useEffect(() => {
+    const fetchNotifications = async () => {
+      try {
+        const response = await fetch('/api/notifications');
+        const data = await response.json();
+        if (data.success) {
+          setNotifications(data.notifications);
+        }
+      } catch (error) {
+        console.error('Failed to fetch notifications:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchNotifications();
+  }, [customerId]);
 
-  const markAsReadMutation = useMutation({
-    mutationFn: (notificationId) => base44.entities.Notification.update(notificationId, { is_read: true }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['customerNotifications'] });
+  const markAsRead = async (notificationId) => {
+    try {
+      const response = await fetch(`/api/notifications/${notificationId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'read' })
+      });
+      if (response.ok) {
+        setNotifications(prev => prev.map(n => 
+          n._id === notificationId ? { ...n, status: 'read' } : n
+        ));
+      }
+    } catch (error) {
+      console.error('Failed to mark as read:', error);
     }
-  });
+  };
 
-  const markAllAsReadMutation = useMutation({
-    mutationFn: async () => {
-      const unreadNotifications = notifications.filter(n => !n.is_read);
-      await Promise.all(unreadNotifications.map(n => 
-        base44.entities.Notification.update(n.id, { is_read: true })
-      ));
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['customerNotifications'] });
-    }
-  });
+  const markAllAsRead = async () => {
+    const unreadNotifications = notifications.filter(n => n.status === 'unread');
+    await Promise.all(unreadNotifications.map(n => markAsRead(n._id)));
+  };
 
   const filteredNotifications = notifications.filter(n => {
-    if (filter === 'unread') return !n.is_read;
-    if (filter === 'read') return n.is_read;
+    if (filter === 'unread') return n.status === 'unread';
+    if (filter === 'read') return n.status === 'read';
     return true;
   });
 
-  const unreadCount = notifications.filter(n => !n.is_read).length;
+  const unreadCount = notifications.filter(n => n.status === 'unread').length;
 
   if (isLoading) {
     return (
@@ -77,8 +87,7 @@ export default function NotificationsView({ customerId }) {
           <Button
             variant="outline"
             size="sm"
-            onClick={() => markAllAsReadMutation.mutate()}
-            disabled={markAllAsReadMutation.isPending}
+            onClick={markAllAsRead}
           >
             <CheckCircle className="w-4 h-4 mr-2" />
             Mark All as Read
@@ -124,17 +133,17 @@ export default function NotificationsView({ customerId }) {
           </Card>
         ) : (
           filteredNotifications.map((notification) => {
-            const config = notificationTypeConfig[notification.notification_type] || notificationTypeConfig.status_change;
+            const config = notificationTypeConfig[notification.type] || notificationTypeConfig.service_request_update;
             const Icon = config.icon;
 
             return (
               <motion.div
-                key={notification.id}
+                key={notification._id}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
               >
                 <Card 
-                  className={`${!notification.is_read ? 'border-l-4 border-l-blue-600' : ''} hover:shadow-md transition-all`}
+                  className={`${notification.status === 'unread' ? 'border-l-4 border-l-blue-600' : ''} hover:shadow-md transition-all`}
                 >
                   <CardContent className="p-5">
                     <div className="flex items-start gap-4">
@@ -145,10 +154,10 @@ export default function NotificationsView({ customerId }) {
                         <div className="flex items-start justify-between gap-3 mb-2">
                           <div className="flex-1">
                             <div className="flex items-center gap-2 mb-1">
-                              <h3 className={`font-semibold ${!notification.is_read ? 'text-slate-900' : 'text-slate-600'}`}>
-                                {notification.subject}
+                              <h3 className={`font-semibold ${notification.status === 'unread' ? 'text-slate-900' : 'text-slate-600'}`}>
+                                {notification.title}
                               </h3>
-                              {!notification.is_read && (
+                              {notification.status === 'unread' && (
                                 <Badge className="bg-blue-600 text-white">New</Badge>
                               )}
                             </div>
@@ -156,12 +165,12 @@ export default function NotificationsView({ customerId }) {
                               {notification.message}
                             </p>
                           </div>
-                          {!notification.is_read && (
+                          {notification.status === 'unread' && (
                             <Button
                               variant="ghost"
                               size="sm"
-                              onClick={() => markAsReadMutation.mutate(notification.id)}
-                              disabled={markAsReadMutation.isPending}
+                              data-id={notification._id}
+                              onClick={() => markAsRead(notification._id)}
                             >
                               <CheckCircle className="w-4 h-4" />
                             </Button>
@@ -170,11 +179,11 @@ export default function NotificationsView({ customerId }) {
                         <div className="flex items-center gap-3 text-xs text-slate-500">
                           <span className="flex items-center gap-1">
                             <Clock className="w-3 h-3" />
-                            {notification.created_date ? format(new Date(notification.created_date), 'MMM d, yyyy h:mm a') : 'N/A'}
+                            {notification.createdAt ? format(new Date(notification.createdAt), 'MMM d, yyyy h:mm a') : 'N/A'}
                           </span>
                           <span className="flex items-center gap-1">
                             <Mail className="w-3 h-3" />
-                            Sent via {notification.sent_via}
+                            Sent via {notification.sentVia}
                           </span>
                         </div>
                       </div>

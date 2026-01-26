@@ -81,7 +81,10 @@ export default function Sidebar() {
     { id: 'customer-jobs', label: 'My Jobs', icon: Calendar, href: '/customer-jobs' },
     { id: 'customer-invoices', label: 'My Invoices', icon: DollarSign, href: '/customer-invoices' },
     { id: 'customer-document', label: 'My document', icon: Shield, href: '/customer-document' },
-    { id: 'customer-messages', label: 'Messages', icon: MessageSquare, href: '/customer-message' }
+    { id: 'customer-messages', label: 'Messages', icon: MessageSquare, href: '/customer-message' },
+    { id: 'customer-notification', label: 'Notifications', icon: Bell, href: '/customer-notification' },
+    { id: 'customer-payment', label: 'Payments', icon: DollarSign, href: '/customer-payment' },
+    { id: 'profile', label: 'Profile', icon: User, href: '/profile' },
   ];
 
   const isActive = (href: string) => pathname === href;

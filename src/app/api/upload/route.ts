@@ -27,6 +27,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ 
       success: true, 
       url: imageUrl,
+      fileUrl: imageUrl, // keep both keys for client compatibility
       message: 'File uploaded successfully' 
     });
   } catch (error) {

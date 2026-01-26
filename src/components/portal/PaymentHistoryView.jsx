@@ -1,31 +1,65 @@
-import React from 'react';
-import { base44 } from "@/api/base44Client";
-import { useQuery } from "@tanstack/react-query";
+'use client';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { CreditCard, Calendar, DollarSign, Receipt } from "lucide-react";
+import { CreditCard, Calendar, DollarSign, Receipt, CheckCircle, Clock, XCircle } from "lucide-react";
 import { format } from "date-fns";
 import { motion } from "framer-motion";
 
-const paymentMethodIcons = {
-  cash: CreditCard,
-  check: Receipt,
-  credit_card: CreditCard,
-  ach: CreditCard,
-  wire_transfer: CreditCard
+const statusConfig = {
+  succeeded: { icon: CheckCircle, color: 'text-green-600', bg: 'bg-green-100', label: 'Completed' },
+  completed: { icon: CheckCircle, color: 'text-green-600', bg: 'bg-green-100', label: 'Completed' },
+  pending: { icon: Clock, color: 'text-amber-600', bg: 'bg-amber-100', label: 'Pending' },
+  failed: { icon: XCircle, color: 'text-red-600', bg: 'bg-red-100', label: 'Failed' },
+  canceled: { icon: XCircle, color: 'text-slate-600', bg: 'bg-slate-100', label: 'Cancelled' },
+  cancelled: { icon: XCircle, color: 'text-slate-600', bg: 'bg-slate-100', label: 'Cancelled' }
 };
 
 export default function PaymentHistoryView({ customerId }) {
-  const { data: invoices = [], isLoading } = useQuery({
-    queryKey: ['customerPaymentHistory', customerId],
-    queryFn: () => base44.entities.Invoice.filter({ customer_id: customerId }, '-paid_date')
-  });
+  const [payments, setPayments] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  // Filter paid invoices
-  const payments = invoices.filter(inv => inv.amount_paid > 0);
+  useEffect(() => {
+    const loadPayments = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const response = await fetch('/api/customer-payments');
+        const data = await response.json();
+        
+        if (data.success) {
+          console.log(data);
+          
+          setPayments(data.payments || []);
+        } else {
+          setError(data.message || 'Failed to load payments');
+        }
+      } catch (err) {
+        console.error('Failed to fetch payments:', err);
+        setError('Failed to load payments');
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  if (isLoading) {
+    loadPayments();
+  }, [customerId]);
+
+  if (loading) {
     return <div className="text-center py-12 text-slate-500">Loading payment history...</div>;
+  }
+
+  if (error) {
+    return (
+      <Card className="border-red-200 bg-red-50">
+        <CardContent className="text-center py-12">
+          <XCircle className="w-16 h-16 text-red-300 mx-auto mb-4" />
+          <p className="text-red-700 font-medium">Error Loading Payments</p>
+          <p className="text-sm text-red-600 mt-2">{error}</p>
+        </CardContent>
+      </Card>
+    );
   }
 
   if (payments.length === 0) {
@@ -40,8 +74,10 @@ export default function PaymentHistoryView({ customerId }) {
     );
   }
 
-  // Calculate total paid
-  const totalPaid = payments.reduce((sum, inv) => sum + (inv.amount_paid || 0), 0);
+  // Calculate total paid (succeeded/completed payments only)
+  const totalPaid = payments
+    .filter(p => p.status === 'succeeded' || p.status === 'completed')
+    .reduce((sum, p) => sum + Number(p.amount ?? p.payment_amount ?? 0), 0);
 
   return (
     <div className="space-y-6">
@@ -65,10 +101,16 @@ export default function PaymentHistoryView({ customerId }) {
       <div className="space-y-4">
         <h3 className="text-lg font-semibold text-slate-900">Payment History</h3>
         {payments.map((payment) => {
-          const Icon = paymentMethodIcons[payment.payment_method] || CreditCard;
+          const config = statusConfig[payment.status] || statusConfig.pending;
+          const StatusIcon = config.icon;
+          const amount = Number(payment.amount ?? payment.payment_amount ?? 0);
+          const currency = (payment.currency || 'usd').toUpperCase();
+          const createdDate = payment.createdAt ? new Date(payment.createdAt) : null;
+          const displayName = payment.customer_name || payment.payment_number || 'Payment';
+          
           return (
             <motion.div
-              key={payment.id}
+              key={payment._id}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
             >
@@ -76,49 +118,44 @@ export default function PaymentHistoryView({ customerId }) {
                 <CardContent className="p-6">
                   <div className="flex items-start justify-between">
                     <div className="flex items-start gap-4">
-                      <div className="p-3 bg-green-100 rounded-lg">
-                        <Icon className="w-5 h-5 text-green-700" />
+                      <div className={`p-3 rounded-lg ${config.bg}`}>
+                        <StatusIcon className={`w-5 h-5 ${config.color}`} />
                       </div>
                       <div>
                         <div className="flex items-center gap-3 mb-2">
-                          <h4 className="font-semibold text-slate-900">{payment.invoice_number}</h4>
-                          <Badge className="bg-green-100 text-green-700">Paid</Badge>
+                          <h4 className="font-semibold text-slate-900">
+                            {displayName}
+                          </h4>
+                          <Badge className={`${config.bg} ${config.color}`}>
+                            {config.label}
+                          </Badge>
                         </div>
                         <div className="flex items-center gap-4 text-sm text-slate-600">
                           <div className="flex items-center gap-1">
                             <Calendar className="w-4 h-4" />
                             <span>
-                              {payment.paid_date 
-                                ? format(new Date(payment.paid_date), 'MMM d, yyyy')
-                                : payment.last_payment_date
-                                  ? format(new Date(payment.last_payment_date), 'MMM d, yyyy')
-                                  : 'Date not recorded'}
+                              {createdDate ? format(createdDate, 'MMM d, yyyy') : 'Date not recorded'}
                             </span>
                           </div>
-                          {payment.payment_method && (
-                            <div className="flex items-center gap-1">
-                              <span className="capitalize">
-                                {payment.payment_method.replace(/_/g, ' ')}
-                              </span>
-                            </div>
-                          )}
+                          <div className="flex items-center gap-1">
+                            <span className="text-slate-500">•</span>
+                            <span className="capitalize">{currency}</span>
+                          </div>
                         </div>
-                        {payment.amount_paid < payment.total_amount && (
-                          <p className="text-xs text-amber-600 mt-2">
-                            Partial payment: ${payment.amount_paid.toFixed(2)} of ${payment.total_amount.toFixed(2)}
+                        {payment.stripe_payment_intent_id && (
+                          <p className="text-xs text-slate-500 mt-2">
+                            ID: {payment.stripe_payment_intent_id.substring(0, 20)}...
                           </p>
                         )}
                       </div>
                     </div>
                     <div className="text-right">
-                      <p className="text-2xl font-bold text-green-600">
-                        ${payment.amount_paid.toFixed(2)}
+                      <p className="text-2xl font-bold text-slate-900">
+                        ${amount.toFixed(2)}
                       </p>
-                      {payment.balance_due > 0 && (
-                        <p className="text-xs text-slate-500 mt-1">
-                          Balance: ${payment.balance_due.toFixed(2)}
-                        </p>
-                      )}
+                      <p className="text-xs text-slate-500 mt-1">
+                        {currency}
+                      </p>
                     </div>
                   </div>
                 </CardContent>
