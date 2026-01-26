@@ -14,15 +14,17 @@ import {
   Package
 } from "lucide-react";
 
+// Import the expense history component
+import VendorExpenseHistory from './VendorExpenseHistoryNew';
+import VendorJobAssociations from './VendorJobAssociations';
+import VendorPerformanceReport from './VendorPerformanceReport';
+import VendorPurchaseOrders from './VendorPurchaseOrders';
+
 export default function VendorDetailView({ 
   vendor, 
   expenses, 
   onClose, 
-  onEdit,
-  VendorExpenseHistory,
-  VendorJobAssociations,
-  VendorPerformanceReport,
-  VendorPurchaseOrders
+  onEdit
 }) {
   const [activeTab, setActiveTab] = useState('expenses');
 
@@ -187,43 +189,19 @@ export default function VendorDetailView({
           </TabsList>
 
           <TabsContent value="expenses" className="mt-0">
-            {VendorExpenseHistory ? (
-              <VendorExpenseHistory vendor={vendor} expenses={vendorExpenses} />
-            ) : (
-              <div className="bg-white rounded-lg border border-slate-200 p-6">
-                <p className="text-slate-500">No expenses found for this vendor.</p>
-              </div>
-            )}
+            <VendorExpenseHistory vendor={vendor} />
           </TabsContent>
 
           <TabsContent value="purchase-orders" className="mt-0">
-            {VendorPurchaseOrders ? (
-              <VendorPurchaseOrders vendor={vendor} expenses={vendorExpenses} />
-            ) : (
-              <div className="bg-white rounded-lg border border-slate-200 p-6">
-                <p className="text-slate-500">No purchase orders found for this vendor.</p>
-              </div>
-            )}
+            <VendorPurchaseOrders vendor={vendor} />
           </TabsContent>
 
           <TabsContent value="jobs" className="mt-0">
-            {VendorJobAssociations ? (
-              <VendorJobAssociations vendor={vendor} expenses={vendorExpenses} jobs={jobs} />
-            ) : (
-              <div className="bg-white rounded-lg border border-slate-200 p-6">
-                <p className="text-slate-500">No job associations found for this vendor.</p>
-              </div>
-            )}
+            <VendorJobAssociations vendor={vendor} />
           </TabsContent>
 
           <TabsContent value="performance" className="mt-0">
-            {VendorPerformanceReport ? (
-              <VendorPerformanceReport vendor={vendor} expenses={vendorExpenses} />
-            ) : (
-              <div className="bg-white rounded-lg border border-slate-200 p-6">
-                <p className="text-slate-500">Performance report will be available once expenses are tracked.</p>
-              </div>
-            )}
+            <VendorPerformanceReport vendor={vendor} />
           </TabsContent>
         </Tabs>
       </div>

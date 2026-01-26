@@ -48,6 +48,7 @@ export default function ExpensesPage() {
   
   const [showForm, setShowForm] = useState(false);
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
+  const [jobs, setJobs] = useState([]);
 
   const [formData, setFormData] = useState<FormData>({
     expense_id: "",
@@ -68,7 +69,20 @@ export default function ExpensesPage() {
 
   useEffect(() => {
     dispatch(fetchExpenses());
+    fetchJobs();
   }, [dispatch]);
+
+  const fetchJobs = async () => {
+    try {
+      const response = await fetch('/api/jobs');
+      const result = await response.json();
+      if (result.success) {
+        setJobs(result.data);
+      }
+    } catch (error) {
+      console.error('Error fetching jobs:', error);
+    }
+  };
 
   /* ----------------------------------------------------
      HANDLERS (DYNAMIC)
@@ -311,7 +325,7 @@ export default function ExpensesPage() {
                   <JobLinkageSection
                     data={formData}
                     onChange={setFormData}
-                    jobs={[]}
+                    jobs={jobs}
                     isReadOnly={isReadOnly}
                   />
                   <PurchaseOrderSection

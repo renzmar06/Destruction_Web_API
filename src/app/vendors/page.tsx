@@ -218,10 +218,6 @@ export default function VendorsPage() {
           setViewingVendor(null);
         }}
         onEdit={handleEdit}
-        VendorExpenseHistory={VendorExpenseHistory}
-        VendorJobAssociations={VendorJobAssociations}
-        VendorPerformanceReport={VendorPerformanceReport}
-        VendorPurchaseOrders={VendorPurchaseOrders}
       />
     );
   }

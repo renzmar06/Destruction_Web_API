@@ -6,11 +6,11 @@ import { Link2 } from "lucide-react";
 
 export default function JobLinkageSection({ data, onChange, jobs, isReadOnly }) {
   const handleJobChange = (jobId) => {
-    const job = jobs.find(j => j.id === jobId);
+    const job = jobs.find(j => (j._id || j.id) === jobId);
     onChange({
       ...data,
       job_id: jobId || null,
-      job_reference: job ? job.job_id : null
+      job_reference: job ? job.job_number : null
     });
   };
 
@@ -40,8 +40,8 @@ export default function JobLinkageSection({ data, onChange, jobs, isReadOnly }) 
               <SelectContent>
                 <SelectItem value="none">No Job Link</SelectItem>
                 {jobs.map(job => (
-                  <SelectItem key={job.id} value={job.id}>
-                    {job.job_id} - {job.job_name}
+                  <SelectItem key={job._id || job.id} value={job._id || job.id}>
+                    {job.job_number} - {job.job_name || job.customer_name}
                   </SelectItem>
                 ))}
               </SelectContent>
