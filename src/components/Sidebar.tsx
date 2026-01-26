@@ -26,7 +26,8 @@ import {
   User,
   Shield,
   Receipt,
-  LogOut
+  LogOut,
+  CreditCard
 } from 'lucide-react';
 
 export default function Sidebar() {
@@ -70,7 +71,9 @@ export default function Sidebar() {
     { id: 'customer-task', label: 'Task', icon: FileText, href: '/customer-task' },
     { id: 'customers', label: 'Customers', icon: Users, href: '/customers' },
     { id: 'vendors', label: 'Vendors', icon: Truck, href: '/vendors' },
-    { id: 'invoices', label: 'Invoices', icon: DollarSign, href: '/invoices' }
+    { id: 'invoices', label: 'Invoices', icon: DollarSign, href: '/invoices' },
+    { id: 'receive-payments', label: 'Receive Payments', icon: CreditCard, href: '/receive-payments' },
+    { id: 'vendor-payments', label: 'Vendor Payments', icon: CreditCard, href: '/vendor-payments' }
     
   ];
 
@@ -110,7 +113,7 @@ export default function Sidebar() {
       </div>
 
       {/* Navigation Items */}
-      <nav className="flex-1 py-4 overflow-y-auto">
+      <nav className="flex-1 py-4 overflow-y-auto [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-slate-700/50 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb:hover]:bg-blue-500/60 [&::-webkit-scrollbar-thumb:active]:bg-blue-400/70 scrollbar-thin scrollbar-track-transparent scrollbar-thumb-slate-700/50 hover:scrollbar-thumb-blue-500/60">
         <ul className="space-y-1 px-2">
           
           {/* Show customer pages directly for customers */}

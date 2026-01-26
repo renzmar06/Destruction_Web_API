@@ -29,8 +29,8 @@ export default function InvoiceList({ invoices, customers, onView, onSend, onFin
   const itemsPerPage = 10;
 
   const getCustomerName = (customerId) => {
-    const customer = customers.find(c => c.id === customerId);
-    return customer?.legal_company_name || 'Unknown';
+    const customer = customers.find(c => c._id === customerId || c.id === customerId);
+    return customer?.legal_company_name || customer?.display_name || 'Unknown';
   };
 
   const getDaysOverdue = (invoice) => {
@@ -81,8 +81,7 @@ export default function InvoiceList({ invoices, customers, onView, onSend, onFin
   };
 
   const handleRowClick = (invoice) => {
-    setSelectedInvoiceForView(invoice);
-    setShowPortalView(true);
+    onView(invoice);
   };
 
   if (showPortalView) {
@@ -170,7 +169,7 @@ export default function InvoiceList({ invoices, customers, onView, onSend, onFin
                       {invoice.issue_date ? format(new Date(invoice.issue_date), 'M/d/yy') : '—'}
                     </TableCell>
                     <TableCell className="text-sm font-medium text-slate-900">
-                      {invoice.invoice_number?.replace('INV-', '').slice(0, 4) || '—'}
+                      {invoice.invoice_number || '—'}
                     </TableCell>
                     <TableCell className="text-sm text-slate-900">
                       {getCustomerName(invoice.customer_id)}

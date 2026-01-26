@@ -147,6 +147,39 @@ export default function AffidavitsPage() {
     setShowForm(true);
   };
 
+  const handleIssue = async (affidavit: Affidavit) => {
+    if (!confirm("Issue this affidavit? This will generate the certificate.")) return;
+
+    try {
+      await dispatch(updateAffidavit({
+        id: affidavit._id || affidavit.id!,
+        data: { 
+          affidavit_status: "issued",
+          date_issued: new Date().toISOString()
+        }
+      })).unwrap();
+      showToast("Affidavit issued successfully.");
+    } catch (error: any) {
+      const errorMessage = error?.message || 'Unknown error occurred';
+      alert('Failed to issue affidavit: ' + errorMessage);
+    }
+  };
+
+  const handleRevoke = async (affidavit: Affidavit) => {
+    if (!confirm("Revoke this affidavit? This action cannot be undone.")) return;
+
+    try {
+      await dispatch(updateAffidavit({
+        id: affidavit._id || affidavit.id!,
+        data: { affidavit_status: "revoked" }
+      })).unwrap();
+      showToast("Affidavit revoked successfully.");
+    } catch (error: any) {
+      const errorMessage = error?.message || 'Unknown error occurred';
+      alert('Failed to revoke affidavit: ' + errorMessage);
+    }
+  };
+
   const handleLock = async (affidavit: Affidavit) => {
     if (!confirm("Lock this affidavit?")) return;
 
@@ -349,7 +382,9 @@ export default function AffidavitsPage() {
               <AffidavitList
                 affidavits={affidavits}
                 onView={handleView}
+                onIssue={handleIssue}
                 onLock={handleLock}
+                onRevoke={handleRevoke}
                 isLoading={loading}
               />
             </motion.div>
