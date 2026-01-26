@@ -1,15 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { base44 } from "@/api/base44Client";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useToast } from "@/components/ui/use-toast";
 import { User, Building2, Mail, Phone, MapPin, Save, CheckCircle, Upload, DollarSign, Image as ImageIcon } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
-export default function ProfileView({ customer, user }) {
+export default function ProfileView({ customer }) {
+  const { toast } = useToast();
   const [isEditing, setIsEditing] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [formData, setFormData] = useState({
@@ -47,8 +46,7 @@ export default function ProfileView({ customer, user }) {
   });
 
   const [uploading, setUploading] = useState(false);
-
-  const queryClient = useQueryClient();
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     setFormData({
@@ -86,19 +84,38 @@ export default function ProfileView({ customer, user }) {
     });
   }, [customer]);
 
-  const updateProfileMutation = useMutation({
-    mutationFn: (data) => base44.entities.Customer.update(customer.id, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['customers'] });
-      setIsEditing(false);
-      setShowSuccess(true);
-      setTimeout(() => setShowSuccess(false), 3000);
-    }
-  });
-
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    updateProfileMutation.mutate(formData);
+    setSaving(true);
+    const userId = customer.id || customer._id;
+    if (!userId) {
+      console.error('Cannot update profile: missing user id');
+      setSaving(false);
+      return;
+    }
+    try {
+      const response = await fetch(`/api/users/${userId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData),
+      });
+      const data = await response.json();
+      if (data.success) {
+        setIsEditing(false);
+        setShowSuccess(true);
+        toast({
+          title: 'Profile updated',
+          description: 'Your changes were saved successfully.',
+        });
+        setTimeout(() => setShowSuccess(false), 3000);
+      }
+    } catch (error) {
+      console.error('Failed to update profile:', error);
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleLogoUpload = async (e) => {
@@ -107,12 +124,18 @@ export default function ProfileView({ customer, user }) {
 
     setUploading(true);
     try {
-      const response = await base44.integrations.Core.UploadFile({ file });
-      const fileUrl = response.file_url || response.data?.file_url;
-      if (fileUrl) {
-        setFormData({...formData, logo_url: fileUrl});
+      const formData = new FormData();
+      formData.append('file', file);
+      
+      const response = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData,
+      });
+      const data = await response.json();
+      if (data.success && data.fileUrl) {
+        setFormData(prev => ({...prev, logo_url: data.fileUrl}));
       } else {
-        throw new Error('No file URL returned from upload');
+        throw new Error('Failed to upload file');
       }
     } catch (error) {
       alert('Failed to upload logo: ' + error.message);
@@ -612,17 +635,17 @@ export default function ProfileView({ customer, user }) {
               type="button"
               variant="outline"
               onClick={handleCancel}
-              disabled={updateProfileMutation.isPending}
+              disabled={saving}
             >
               Cancel
             </Button>
             <Button
               type="submit"
-              disabled={updateProfileMutation.isPending}
+              disabled={saving}
               className="bg-blue-600 hover:bg-blue-700 gap-2"
             >
               <Save className="w-4 h-4" />
-              {updateProfileMutation.isPending ? 'Saving...' : 'Save Changes'}
+              {saving ? 'Saving...' : 'Save Changes'}
             </Button>
           </div>
         )}
