@@ -13,7 +13,7 @@ const statusConfig = {
   revoked: { label: 'Revoked', className: 'bg-red-100 text-red-700 border-red-200' }
 };
 
-export default function AffidavitList({ affidavits, onView, onLock, isLoading }) {
+export default function AffidavitList({ affidavits, onView, onIssue, onLock, onRevoke, isLoading }) {
   const [searchTerm, setSearchTerm] = useState('');
 
   const filteredAffidavits = affidavits.filter(affidavit =>
@@ -70,7 +70,7 @@ export default function AffidavitList({ affidavits, onView, onLock, isLoading })
             ) : (
               filteredAffidavits.map((affidavit) => (
                 <motion.tr
-                  key={affidavit.id}
+                  key={affidavit._id || affidavit.id}
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   className="border-b border-slate-100 hover:bg-slate-50 transition-colors"
@@ -97,6 +97,19 @@ export default function AffidavitList({ affidavits, onView, onLock, isLoading })
                         <Eye className="w-4 h-4" />
                         View
                       </Button>
+                      
+                      {affidavit.affidavit_status === 'pending' && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => onIssue(affidavit)}
+                          className="h-8 gap-2 text-green-600 hover:text-green-700"
+                        >
+                          <FileCheck className="w-4 h-4" />
+                          Issue
+                        </Button>
+                      )}
+                      
                       {(affidavit.affidavit_status === 'issued' || affidavit.affidavit_status === 'locked') && (
                         <>
                           <Button
@@ -121,6 +134,7 @@ export default function AffidavitList({ affidavits, onView, onLock, isLoading })
                           </Button>
                         </>
                       )}
+                      
                       {affidavit.affidavit_status === 'issued' && (
                         <Button
                           variant="ghost"
@@ -130,6 +144,18 @@ export default function AffidavitList({ affidavits, onView, onLock, isLoading })
                         >
                           <Lock className="w-4 h-4" />
                           Lock
+                        </Button>
+                      )}
+                      
+                      {(affidavit.affidavit_status === 'issued' || affidavit.affidavit_status === 'locked') && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => onRevoke(affidavit)}
+                          className="h-8 gap-2 text-red-600 hover:text-red-700"
+                        >
+                          <XCircle className="w-4 h-4" />
+                          Revoke
                         </Button>
                       )}
                     </div>
