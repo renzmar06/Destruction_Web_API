@@ -109,8 +109,9 @@ export default function NameContactSection({ data, onChange, errors }) {
             type="email"
             value={data.email || ''}
             onChange={(e) => handleChange('email', e.target.value)}
-            className="h-10 border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+            className={`h-10 border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 ${errors.email ? 'border-red-400' : ''}`}
           />
+          {errors.email && <p className="text-xs text-red-500">{errors.email}</p>}
         </div>
 
         <div className="space-y-2">
@@ -136,8 +137,9 @@ export default function NameContactSection({ data, onChange, errors }) {
             id="phone"
             value={data.phone || ''}
             onChange={(e) => handleChange('phone', e.target.value)}
-            className="h-10 border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+            className={`h-10 border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 ${errors.phone ? 'border-red-400' : ''}`}
           />
+          {errors.phone && <p className="text-xs text-red-500">{errors.phone}</p>}
         </div>
         <div className="space-y-2">
           <Label htmlFor="cc_email" className="text-xs font-semibold text-slate-700">Cc</Label>
@@ -146,8 +148,9 @@ export default function NameContactSection({ data, onChange, errors }) {
             type="email"
             value={data.cc_email || ''}
             onChange={(e) => handleChange('cc_email', e.target.value)}
-            className="h-10 border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+            className={`h-10 border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 ${errors.cc_email ? 'border-red-400' : ''}`}
           />
+          {errors.cc_email && <p className="text-xs text-red-500">{errors.cc_email}</p>}
         </div>
 
         <div className="space-y-2">
@@ -157,8 +160,9 @@ export default function NameContactSection({ data, onChange, errors }) {
             type="email"
             value={data.bcc_email || ''}
             onChange={(e) => handleChange('bcc_email', e.target.value)}
-            className="h-10 border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+            className={`h-10 border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 ${errors.bcc_email ? 'border-red-400' : ''}`}
           />
+          {errors.bcc_email && <p className="text-xs text-red-500">{errors.bcc_email}</p>}
         </div>
       </div>
 
@@ -169,8 +173,9 @@ export default function NameContactSection({ data, onChange, errors }) {
             id="mobile"
             value={data.mobile || ''}
             onChange={(e) => handleChange('mobile', e.target.value)}
-            className="h-10 border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+            className={`h-10 border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 ${errors.mobile ? 'border-red-400' : ''}`}
           />
+          {errors.mobile && <p className="text-xs text-red-500">{errors.mobile}</p>}
         </div>
 
         <div className="space-y-2">
@@ -202,8 +207,9 @@ export default function NameContactSection({ data, onChange, errors }) {
             value={data.website || ''}
             onChange={(e) => handleChange('website', e.target.value)}
             placeholder="https://"
-            className="h-10 border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+            className={`h-10 border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 ${errors.website ? 'border-red-400' : ''}`}
           />
+          {errors.website && <p className="text-xs text-red-500">{errors.website}</p>}
         </div>
       </div>
 

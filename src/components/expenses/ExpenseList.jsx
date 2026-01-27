@@ -126,7 +126,7 @@ export default function ExpenseList({ expenses, onView, onApprove, onArchive, is
                   <TableCell className="font-medium text-slate-900">{expense.expense_id}</TableCell>
                   <TableCell className="text-slate-700">{expenseTypeLabels[expense.expense_type] || expense.expense_type}</TableCell>
                   <TableCell className="text-slate-700">{expense.vendor_name}</TableCell>
-                  <TableCell className="text-slate-600 text-sm">{expense.job_id || '-'}</TableCell>
+                  <TableCell className="text-slate-600 text-sm">{typeof expense.job_id === 'object' ? expense.job_id?.job_name || expense.job_id?.job_id || '-' : expense.job_id || '-'}</TableCell>
                   <TableCell className="font-semibold text-slate-900">${expense.amount?.toFixed(2)}</TableCell>
                   <TableCell className="text-slate-600 text-sm">
                     {expense.expense_date ? format(new Date(expense.expense_date), 'MMM d, yyyy') : 'N/A'}

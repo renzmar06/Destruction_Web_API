@@ -46,6 +46,7 @@ export default function ProductsServicesPage() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [clearFilters, setClearFilters] = useState<(() => void) | null>(null);
   const [toast, setToast] = useState<{message: string; type: 'success' | 'error'} | null>(null);
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   const [formData, setFormData] = useState<Service>({
     service_name: "",
@@ -103,6 +104,7 @@ export default function ProductsServicesPage() {
       income_account: "services",
       sales_tax_category: "taxable_standard",
     });
+    setErrors({});
   };
 
   /* ---------------- ACTIONS ---------------- */
@@ -112,28 +114,68 @@ export default function ProductsServicesPage() {
     setShowForm(true);
   };
 
-  const handleSave = async () => {
-    // Validation with specific error messages
-    const errors = [];
+  const handleFormChange = (newFormData: Service) => {
+    setFormData(newFormData);
+    // Clear errors for fields that are being modified
+    if (errors && Object.keys(errors).length > 0) {
+      const newErrors = { ...errors };
+      Object.keys(newFormData).forEach(key => {
+        if (newFormData[key as keyof Service] !== formData[key as keyof Service]) {
+          delete newErrors[key];
+        }
+      });
+      setErrors(newErrors);
+    }
+  };
+
+  const validateForm = () => {
+    const newErrors: Record<string, string> = {};
     
+    // Required fields
     if (!formData.service_name?.trim()) {
-      errors.push("Service name is required");
+      newErrors.service_name = "Service name is required";
     }
     if (!formData.service_category?.trim()) {
-      errors.push("Service category is required");
+      newErrors.service_category = "Service category is required";
     }
-    if (formData.i_sell_service && !formData.pricing_unit?.trim()) {
-      errors.push("Pricing unit is required when selling service");
+    
+    // Sales validation (when selling service)
+    if (formData.i_sell_service) {
+      if (!formData.pricing_unit?.trim()) {
+        newErrors.pricing_unit = "Pricing unit is required when selling service";
+      }
+      if (!formData.income_account?.trim()) {
+        newErrors.income_account = "Income account is required when selling service";
+      }
+      if (!formData.default_rate || formData.default_rate <= 0) {
+        newErrors.default_rate = "Price/rate must be greater than 0";
+      }
+      if (formData.default_rate && formData.default_rate > 999999) {
+        newErrors.default_rate = "Price/rate cannot exceed $999,999";
+      }
     }
-    if (formData.i_sell_service && !formData.income_account?.trim()) {
-      errors.push("Income account is required when selling service");
+    
+    // Numeric validations
+    if (formData.estimated_cost_per_unit && formData.estimated_cost_per_unit < 0) {
+      newErrors.estimated_cost_per_unit = "Cost cannot be negative";
     }
-    if (formData.i_sell_service && (!formData.default_rate || formData.default_rate <= 0)) {
-      errors.push("Price/rate must be greater than 0");
+    if (formData.expected_margin_percent && (formData.expected_margin_percent < 0 || formData.expected_margin_percent > 100)) {
+      newErrors.expected_margin_percent = "Margin must be between 0-100%";
     }
+    
+    // SKU validation (if provided)
+    if (formData.sku && formData.sku.length > 50) {
+      newErrors.sku = "SKU cannot exceed 50 characters";
+    }
+    
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
 
-    if (errors.length > 0) {
-      showToast(errors[0], true);
+  const handleSave = async () => {
+    if (!validateForm()) {
+      const firstError = Object.values(errors)[0];
+      showToast(firstError, true);
       return;
     }
 
@@ -272,12 +314,13 @@ export default function ProductsServicesPage() {
             open={showForm}
             onOpenChange={(open: boolean) => !open && handleCancel()}
             formData={formData}
-            onChange={setFormData}
+            onChange={handleFormChange}
             onSave={handleSave}
             onDelete={handleDelete}
             editingService={editingService}
             isSaving={isSaving}
             isDeleting={isDeleting}
+            errors={errors}
             onShowToast={showToast}
           />
 

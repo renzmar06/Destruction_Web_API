@@ -209,11 +209,17 @@ export default function InvoiceList({ invoices, customers, onView, onSend, onFin
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="start" className="w-56">
-                          <DropdownMenuItem onClick={() => onView(invoice)}>
+                          <DropdownMenuItem onClick={(e) => {
+                            e.stopPropagation();
+                            onView(invoice);
+                          }}>
                             View/Edit
                           </DropdownMenuItem>
                           
-                          <DropdownMenuItem onClick={() => onDuplicate?.(invoice)}>
+                          <DropdownMenuItem onClick={(e) => {
+                            e.stopPropagation();
+                            onDuplicate?.(invoice);
+                          }}>
                             <Copy className="w-4 h-4 mr-2" />
                             Duplicate
                           </DropdownMenuItem>
@@ -232,54 +238,92 @@ export default function InvoiceList({ invoices, customers, onView, onSend, onFin
                           )}
                           
                           {invoice.invoice_status === 'sent' && (
-                            <DropdownMenuItem onClick={() => onSendReminder?.(invoice)}>
+                            <DropdownMenuItem onClick={(e) => {
+                              e.stopPropagation();
+                              onSendReminder?.(invoice);
+                            }}>
                               <Clock className="w-4 h-4 mr-2" />
                               Send reminder
                             </DropdownMenuItem>
                           )}
                           
-                          <DropdownMenuItem onClick={() => alert('Create task functionality coming soon')}>
+                          <DropdownMenuItem onClick={(e) => {
+                            e.stopPropagation();
+                            window.location.href = '/customer-task';
+                          }}>
                             <CheckSquare className="w-4 h-4 mr-2" />
                             Create task
                           </DropdownMenuItem>
                           
-                          <DropdownMenuItem onClick={() => {
+                          <DropdownMenuItem onClick={(e) => {
+                            e.stopPropagation();
+                            onMarkPaid?.(invoice);
+                          }}>
+                            <CheckSquare className="w-4 h-4 mr-2" />
+                            Mark as Paid
+                          </DropdownMenuItem>
+                          
+                          <DropdownMenuItem onClick={(e) => {
+                            e.stopPropagation();
                             const url = window.location.origin + `/invoice/${invoice.id}`;
                             navigator.clipboard.writeText(url);
-                            alert('Invoice link copied to clipboard');
+                            // Show success message instead of alert
+                            const toast = document.createElement('div');
+                            toast.textContent = 'Invoice link copied to clipboard';
+                            toast.className = 'fixed bottom-4 right-4 bg-green-600 text-white px-4 py-2 rounded shadow-lg z-50';
+                            document.body.appendChild(toast);
+                            setTimeout(() => document.body.removeChild(toast), 3000);
                           }}>
                             <Share2 className="w-4 h-4 mr-2" />
                             Share invoice link
                           </DropdownMenuItem>
                           
-                          <DropdownMenuItem onClick={() => alert('Make recurring payment functionality coming soon')}>
+                          <DropdownMenuItem onClick={(e) => {
+                            e.stopPropagation();
+                            // Disable for now - functionality not implemented
+                          }} disabled>
                             <Repeat className="w-4 h-4 mr-2" />
                             Make recurring payment
                           </DropdownMenuItem>
                           
-                          <DropdownMenuItem onClick={() => window.print()}>
+                          <DropdownMenuItem onClick={(e) => {
+                            e.stopPropagation();
+                            window.print();
+                          }}>
                             <Printer className="w-4 h-4 mr-2" />
                             Print
                           </DropdownMenuItem>
                           
-                          <DropdownMenuItem onClick={() => alert('Print packing slip functionality coming soon')}>
+                          <DropdownMenuItem onClick={(e) => {
+                            e.stopPropagation();
+                            // Disable for now - functionality not implemented
+                          }} disabled>
                             <FileText className="w-4 h-4 mr-2" />
                             Print packing slip
                           </DropdownMenuItem>
                           
                           {invoice.invoice_status !== 'paid' && invoice.invoice_status !== 'void' && (
-                            <DropdownMenuItem onClick={() => onVoid?.(invoice)} className="text-orange-600">
+                            <DropdownMenuItem onClick={(e) => {
+                              e.stopPropagation();
+                              onVoid?.(invoice);
+                            }} className="text-orange-600">
                               <XCircle className="w-4 h-4 mr-2" />
                               Void
                             </DropdownMenuItem>
                           )}
                           
-                          <DropdownMenuItem onClick={() => onDelete?.(invoice)} className="text-red-600">
+                          <DropdownMenuItem onClick={(e) => {
+                            e.stopPropagation();
+                            onDelete?.(invoice);
+                          }} className="text-red-600">
                             <Trash2 className="w-4 h-4 mr-2" />
                             Delete
                           </DropdownMenuItem>
                           
-                          <DropdownMenuItem onClick={() => alert('View activity functionality coming soon')}>
+                          <DropdownMenuItem onClick={(e) => {
+                            e.stopPropagation();
+                            // Disable for now - functionality not implemented
+                          }} disabled>
                             <Activity className="w-4 h-4 mr-2" />
                             View activity
                           </DropdownMenuItem>

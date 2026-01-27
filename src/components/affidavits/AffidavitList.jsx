@@ -22,8 +22,39 @@ export default function AffidavitList({ affidavits, onView, onIssue, onLock, onR
     affidavit.customer_name?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const handleDownload = (affidavit, type) => {
-    alert(`${type} download functionality will be implemented`);
+  const handleDownload = async (affidavit, type) => {
+    try {
+      const endpoint = type === 'Certificate' ? 'certificate' : 'affidavit';
+      const response = await fetch(`/api/affidavits/${affidavit._id || affidavit.id}/download/${endpoint}`);
+      
+      if (response.ok) {
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${type}-${affidavit.affidavit_number || 'document'}.pdf`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+        
+        // Show success toast
+        const toast = document.createElement('div');
+        toast.textContent = `${type} downloaded successfully`;
+        toast.className = 'fixed bottom-4 right-4 bg-green-600 text-white px-4 py-2 rounded shadow-lg z-50';
+        document.body.appendChild(toast);
+        setTimeout(() => document.body.removeChild(toast), 3000);
+      } else {
+        throw new Error('Download failed');
+      }
+    } catch (error) {
+      // Show error toast
+      const toast = document.createElement('div');
+      toast.textContent = `Failed to download ${type}`;
+      toast.className = 'fixed bottom-4 right-4 bg-red-600 text-white px-4 py-2 rounded shadow-lg z-50';
+      document.body.appendChild(toast);
+      setTimeout(() => document.body.removeChild(toast), 3000);
+    }
   };
 
   return (

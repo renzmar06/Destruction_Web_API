@@ -14,6 +14,7 @@ import AffidavitContextHeader from "@/components/affidavits/AffidavitContextHead
 import AffidavitDetailsSection from "@/components/affidavits/AffidavitDetailsSection";
 import MediaReferencesSection from "@/components/affidavits/MediaReferencesSection";
 import AuthorizationSection from "@/components/affidavits/AuthorizationSection";
+import RevokeDocumentModal from "@/components/affidavits/RevokeDocumentModal";
 
 type MediaItem = {
   id: string;
@@ -46,10 +47,31 @@ export default function AffidavitsPage() {
     description_of_process: ""
   });
   const [selectedMediaIds, setSelectedMediaIds] = useState<string[]>([]);
+  const [attachedDocuments, setAttachedDocuments] = useState<{
+    document_id: string;
+    file_name: string;
+    file_path: string;
+    file_type: string;
+    upload_date: Date;
+  }[]>([]);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const [showSuccess, setShowSuccess] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
+  const [showRevokeModal, setShowRevokeModal] = useState(false);
+  const [revokeAffidavit, setRevokeAffidavit] = useState<Affidavit | null>(null);
+
+  const handleFormDataChange = (newData: Affidavit) => {
+    setFormData(newData);
+    // Clear errors for fields that have been filled
+    const newErrors = { ...errors };
+    Object.keys(newData).forEach(key => {
+      if (newData[key as keyof Affidavit] && newErrors[key]) {
+        delete newErrors[key];
+      }
+    });
+    setErrors(newErrors);
+  };
 
   useEffect(() => {
     dispatch(fetchAffidavits());
@@ -64,8 +86,28 @@ export default function AffidavitsPage() {
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
+    
+    // Required text fields
     if (!formData.service_provider_name?.trim()) {
       newErrors.service_provider_name = "Service provider name is required";
+    }
+    if (!formData.service_provider_ein?.trim()) {
+      newErrors.service_provider_ein = "Service provider EIN is required";
+    }
+    if (!formData.service_provider_address?.trim()) {
+      newErrors.service_provider_address = "Service provider address is required";
+    }
+    if (!formData.customer_name?.trim()) {
+      newErrors.customer_name = "Customer name is required";
+    }
+    if (!formData.job_location?.trim()) {
+      newErrors.job_location = "Job location is required";
+    }
+    if (!formData.job_completion_date?.trim()) {
+      newErrors.job_completion_date = "Job completion date is required";
+    }
+    if (!formData.destruction_method?.trim()) {
+      newErrors.destruction_method = "Destruction method is required";
     }
     if (!formData.description_of_materials?.trim()) {
       newErrors.description_of_materials = "Description of materials is required";
@@ -73,6 +115,24 @@ export default function AffidavitsPage() {
     if (!formData.description_of_process?.trim()) {
       newErrors.description_of_process = "Description of process is required";
     }
+    
+    // EIN format validation (XX-XXXXXXX)
+    if (formData.service_provider_ein?.trim()) {
+      const einPattern = /^\d{2}-\d{7}$/;
+      if (!einPattern.test(formData.service_provider_ein)) {
+        newErrors.service_provider_ein = "EIN must be in format XX-XXXXXXX";
+      }
+    }
+    
+    // Date validation
+    if (formData.job_completion_date?.trim()) {
+      const completionDate = new Date(formData.job_completion_date);
+      const today = new Date();
+      if (completionDate > today) {
+        newErrors.job_completion_date = "Completion date cannot be in the future";
+      }
+    }
+    
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -99,6 +159,7 @@ export default function AffidavitsPage() {
     });
     setEditingAffidavit(null);
     setSelectedMediaIds([]);
+    setAttachedDocuments([]);
     setShowJobSelector(false);
     setShowForm(true);
   };
@@ -107,14 +168,19 @@ export default function AffidavitsPage() {
     if (!validateForm()) return;
 
     try {
+      const dataToSave = {
+        ...formData,
+        attached_documents: attachedDocuments
+      };
+
       if (editingAffidavit) {
         await dispatch(updateAffidavit({ 
           id: editingAffidavit._id || editingAffidavit.id!, 
-          data: formData 
+          data: dataToSave 
         })).unwrap();
         showToast("Affidavit updated successfully.");
       } else {
-        await dispatch(createAffidavit(formData)).unwrap();
+        await dispatch(createAffidavit(dataToSave)).unwrap();
         showToast("Affidavit created successfully.");
       }
 
@@ -135,21 +201,48 @@ export default function AffidavitsPage() {
         description_of_materials: "",
         description_of_process: ""
       });
+      setAttachedDocuments([]);
     } catch (error: any) {
       const errorMessage = error?.message || 'Unknown error occurred';
       alert('Failed to save affidavit: ' + errorMessage);
     }
   };
 
-  const handleView = (affidavit: Affidavit) => {
-    setEditingAffidavit(affidavit);
-    setFormData(affidavit);
-    setShowForm(true);
+  const handleView = async (affidavit: Affidavit) => {
+    try {
+      const response = await fetch(`/api/affidavits/${affidavit._id || affidavit.id}`);
+      const result = await response.json();
+      
+      if (result.success) {
+        const data = result.data;
+        setEditingAffidavit(data);
+        setFormData({
+          affidavit_number: data.affidavit_number || "",
+          affidavit_status: data.affidavit_status || "pending",
+          job_id: data.job_id || "",
+          job_reference: data.job_reference || "",
+          customer_name: data.customer_name || "",
+          service_provider_name: data.service_provider_name || "",
+          service_provider_ein: data.service_provider_ein || "",
+          service_provider_address: data.service_provider_address || "",
+          job_location: data.job_location || "",
+          job_completion_date: data.job_completion_date || "",
+          destruction_method: data.destruction_method || "",
+          description_of_materials: data.description_of_materials || "",
+          description_of_process: data.description_of_process || ""
+        });
+        setAttachedDocuments(data.attached_documents || []);
+        setShowForm(true);
+      } else {
+        alert('Failed to load affidavit data');
+      }
+    } catch (error) {
+      console.error('Error loading affidavit:', error);
+      alert('Failed to load affidavit data');
+    }
   };
 
   const handleIssue = async (affidavit: Affidavit) => {
-    if (!confirm("Issue this affidavit? This will generate the certificate.")) return;
-
     try {
       await dispatch(updateAffidavit({
         id: affidavit._id || affidavit.id!,
@@ -158,26 +251,16 @@ export default function AffidavitsPage() {
           date_issued: new Date().toISOString()
         }
       })).unwrap();
-      showToast("Affidavit issued successfully.");
+      showToast("Affidavit issued successfully and certificate generated.");
     } catch (error: any) {
       const errorMessage = error?.message || 'Unknown error occurred';
-      alert('Failed to issue affidavit: ' + errorMessage);
+      showToast('Failed to issue affidavit: ' + errorMessage);
     }
   };
 
   const handleRevoke = async (affidavit: Affidavit) => {
-    if (!confirm("Revoke this affidavit? This action cannot be undone.")) return;
-
-    try {
-      await dispatch(updateAffidavit({
-        id: affidavit._id || affidavit.id!,
-        data: { affidavit_status: "revoked" }
-      })).unwrap();
-      showToast("Affidavit revoked successfully.");
-    } catch (error: any) {
-      const errorMessage = error?.message || 'Unknown error occurred';
-      alert('Failed to revoke affidavit: ' + errorMessage);
-    }
+    setRevokeAffidavit(affidavit);
+    setShowRevokeModal(true);
   };
 
   const handleLock = async (affidavit: Affidavit) => {
@@ -215,7 +298,16 @@ export default function AffidavitsPage() {
       description_of_process: ""
     });
     setSelectedMediaIds([]);
+    setAttachedDocuments([]);
     setErrors({});
+  };
+
+  const handleDocumentAttach = (document: any, removeId?: string) => {
+    if (removeId) {
+      setAttachedDocuments(prev => prev.filter(doc => doc.document_id !== removeId));
+    } else if (document) {
+      setAttachedDocuments(prev => [...prev, document]);
+    }
   };
 
   const isReadOnly =
@@ -334,8 +426,9 @@ export default function AffidavitsPage() {
                 <div className="p-6">
                   <AffidavitDetailsSection
                     data={formData}
-                    onChange={setFormData}
+                    onChange={handleFormDataChange}
                     isReadOnly={isReadOnly}
+                    errors={errors}
                   />
                 </div>
               </div>
@@ -350,6 +443,8 @@ export default function AffidavitsPage() {
                     selectedMediaIds={selectedMediaIds}
                     onSelectionChange={setSelectedMediaIds}
                     isReadOnly={isReadOnly}
+                    attachedDocuments={attachedDocuments}
+                    onDocumentAttach={handleDocumentAttach}
                   />
                 </div>
               </details>
@@ -390,6 +485,18 @@ export default function AffidavitsPage() {
             </motion.div>
           )}
         </AnimatePresence>
+
+        {/* Revoke Modal */}
+        {showRevokeModal && revokeAffidavit && (
+          <RevokeDocumentModal
+            affidavit={revokeAffidavit}
+            onClose={() => {
+              setShowRevokeModal(false);
+              setRevokeAffidavit(null);
+            }}
+            onSuccess={showToast}
+          />
+        )}
 
         {/* Toast */}
         <AnimatePresence>

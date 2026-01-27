@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { Button } from "@/components/ui/button";
-import { Plus, CheckCircle, Receipt, AlertCircle, X } from "lucide-react";
+import { Plus, CheckCircle, Receipt, AlertCircle, X, Download } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { AppDispatch, RootState } from "@/redux/store";
 import { fetchExpenses, createExpense, updateExpense, deleteExpense, Expense } from "@/redux/slices/expensesSlice";
@@ -66,11 +66,44 @@ export default function ExpensesPage() {
   const [showSuccess, setShowSuccess] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
   const [submittingApproval, setSubmittingApproval] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [isExporting, setIsExporting] = useState(false);
 
   useEffect(() => {
     dispatch(fetchExpenses());
     fetchJobs();
   }, [dispatch]);
+
+  const handleExportExpenses = async () => {
+    setIsExporting(true);
+    try {
+      let csvContent = "Expenses Export\n\n";
+      csvContent += "Expense ID,Vendor,Type,Date,Amount,Status,Description\n";
+      
+      expenses.forEach(expense => {
+        csvContent += `${expense.expense_id || expense._id},${expense.vendor_name},${expense.expense_type},${expense.expense_date},${expense.amount},${expense.expense_status},"${expense.description}"\n`;
+      });
+      
+      const blob = new Blob([csvContent], { type: 'text/csv' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `expenses-export-${new Date().toISOString().split('T')[0]}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+      setSuccessMessage('Expenses exported successfully.');
+      setShowSuccess(true);
+      setTimeout(() => setShowSuccess(false), 3000);
+    } catch (error) {
+      setSuccessMessage('Failed to export expenses.');
+      setShowSuccess(true);
+      setTimeout(() => setShowSuccess(false), 3000);
+    } finally {
+      setIsExporting(false);
+    }
+  };
 
   const fetchJobs = async () => {
     try {
@@ -84,9 +117,40 @@ export default function ExpensesPage() {
     }
   };
 
-  /* ----------------------------------------------------
-     HANDLERS (DYNAMIC)
-  ---------------------------------------------------- */
+  const validateForm = (): boolean => {
+    const newErrors: Record<string, string> = {};
+    
+    if (!formData.vendor_name?.trim()) {
+      newErrors.vendor_name = "Vendor is required";
+    }
+    if (!formData.expense_type) {
+      newErrors.expense_type = "Expense type is required";
+    }
+    if (!formData.expense_date?.trim()) {
+      newErrors.expense_date = "Date is required";
+    }
+    if (!formData.description?.trim()) {
+      newErrors.description = "Description is required";
+    }
+    if (formData.amount <= 0) {
+      newErrors.amount = "Amount must be greater than 0";
+    }
+    
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleFormDataChange = (newData: FormData) => {
+    setFormData(newData);
+    const newErrors = { ...errors };
+    Object.keys(newData).forEach(key => {
+      if (newData[key as keyof FormData] && newErrors[key]) {
+        delete newErrors[key];
+      }
+    });
+    setErrors(newErrors);
+  };
+
   const handleAddNew = () => {
     setEditingExpense(null);
     setFormData({
@@ -101,6 +165,7 @@ export default function ExpensesPage() {
       payment_date: "",
       payment_method: "",
     });
+    setErrors({});
     setShowForm(true);
   };
 
@@ -115,9 +180,10 @@ export default function ExpensesPage() {
   };
 
   const handleSave = async () => {
-    // Basic validation
-    if (!formData.vendor_name || !formData.expense_type || !formData.expense_date || !formData.description) {
-      alert('Please fill in all required fields: Vendor, Expense Type, Date, and Description');
+    if (!validateForm()) {
+      setSuccessMessage("Please fix the validation errors before saving.");
+      setShowSuccess(true);
+      setTimeout(() => setShowSuccess(false), 3000);
       return;
     }
 
@@ -130,22 +196,23 @@ export default function ExpensesPage() {
       };
       
       if (editingExpense) {
-        // Update existing expense
         await dispatch(updateExpense({ id: editingExpense._id!, data: expenseData })).unwrap();
         setSuccessMessage("Expense updated successfully.");
         setShowSuccess(true);
         setTimeout(() => setShowSuccess(false), 3000);
-        setShowForm(false); // Return to list after updating
+        setShowForm(false);
       } else {
-        // Create new expense and return to list
         await dispatch(createExpense(expenseData)).unwrap();
         setSuccessMessage("Expense created successfully.");
         setShowSuccess(true);
         setTimeout(() => setShowSuccess(false), 3000);
-        setShowForm(false); // Return to list after creating
+        setShowForm(false);
       }
     } catch (error) {
       console.error('Error saving expense:', error);
+      setSuccessMessage("Failed to save expense. Please try again.");
+      setShowSuccess(true);
+      setTimeout(() => setShowSuccess(false), 3000);
     }
   };
 
@@ -163,14 +230,18 @@ export default function ExpensesPage() {
           setSuccessMessage("Expense submitted for approval and email sent to vendor.");
           setShowSuccess(true);
           setTimeout(() => setShowSuccess(false), 3000);
-          setShowForm(false); // Return to list
+          setShowForm(false);
         } else {
-          alert(result.message || 'Failed to submit for approval');
+          setSuccessMessage(result.message || 'Failed to submit for approval');
+          setShowSuccess(true);
+          setTimeout(() => setShowSuccess(false), 3000);
         }
       }
     } catch (error) {
       console.error('Error submitting expense:', error);
-      alert('Failed to submit for approval');
+      setSuccessMessage('Failed to submit for approval');
+      setShowSuccess(true);
+      setTimeout(() => setShowSuccess(false), 3000);
     } finally {
       setSubmittingApproval(false);
     }
@@ -179,6 +250,7 @@ export default function ExpensesPage() {
   const handleCancel = () => {
     setShowForm(false);
     setEditingExpense(null);
+    setErrors({});
   };
 
   const handleApprove = async (expense: Expense) => {
@@ -207,9 +279,6 @@ export default function ExpensesPage() {
     formData.expense_status === "approved" ||
     formData.expense_status === "archived";
 
-  /* ----------------------------------------------------
-     RENDER
-  ---------------------------------------------------- */
   return (
     <div className="min-h-screen bg-slate-50">
       <div className="max-w-7xl mx-auto px-4 py-8">
@@ -228,13 +297,24 @@ export default function ExpensesPage() {
           </div>
 
           {!showForm && (
-            <Button
-              onClick={handleAddNew}
-              className="h-12 px-6 bg-green-600 hover:bg-green-700 gap-2"
-            >
-              <Plus className="w-5 h-5" />
-              Add Expense
-            </Button>
+            <div className="flex gap-3">
+              <Button
+                onClick={handleAddNew}
+                className="h-12 px-6 bg-green-600 hover:bg-green-700 gap-2"
+              >
+                <Plus className="w-5 h-5" />
+                Add Expense
+              </Button>
+              
+              <Button
+                onClick={handleExportExpenses}
+                disabled={isExporting}
+                className="h-12 px-6 bg-slate-900 hover:bg-slate-800 gap-2"
+              >
+                <Download className="w-5 h-5" />
+                {isExporting ? 'Exporting...' : 'Export'}
+              </Button>
+            </div>
           )}
         </div>
 
@@ -297,15 +377,15 @@ export default function ExpensesPage() {
                 <div className="p-6 space-y-6">
                   <VendorSelector
                     data={formData}
-                    onChange={setFormData}
-                    errors={{}}
+                    onChange={handleFormDataChange}
+                    errors={errors}
                     isReadOnly={isReadOnly}
                   />
 
                   <ExpenseDetailsSection
                     data={formData}
-                    onChange={setFormData}
-                    errors={{}}
+                    onChange={handleFormDataChange}
+                    errors={errors}
                     isReadOnly={isReadOnly}
                   />
 
@@ -324,13 +404,13 @@ export default function ExpensesPage() {
                 <div className="px-6 pb-6 space-y-6">
                   <JobLinkageSection
                     data={formData}
-                    onChange={setFormData}
+                    onChange={handleFormDataChange}
                     jobs={jobs}
                     isReadOnly={isReadOnly}
                   />
                   <PurchaseOrderSection
                     data={formData}
-                    onChange={setFormData}
+                    onChange={handleFormDataChange}
                     isReadOnly={isReadOnly}
                   />
                 </div>
@@ -343,7 +423,7 @@ export default function ExpensesPage() {
               {editingExpense && formData.expense_status === "approved" && (
                 <PaymentSection
                   data={formData}
-                  onChange={setFormData}
+                  onChange={handleFormDataChange}
                   canMarkForPayment={false}
                   onMarkForPayment={() => {}}
                   onMarkAsPaid={() => {}}

@@ -253,8 +253,31 @@ export default function JobsPage() {
     }
   };
 
-  const handlePrintPreview = (): void => {
-    alert("Print / Preview");
+  const handleGenerateAffidavit = async (job: Job): Promise<void> => {
+    try {
+      const response = await fetch('/api/affidavits/generate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          jobId: job._id,
+          customerId: job.customer_id
+        }),
+      });
+      
+      const result = await response.json();
+      
+      if (result.success) {
+        showSuccessToast('Affidavit generated successfully!');
+      } else {
+        alert('Failed to generate affidavit: ' + result.message);
+      }
+    } catch (error: unknown) {
+      console.error('Affidavit generation error:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to generate affidavit';
+      alert(`Error: ${errorMessage}`);
+    }
   };
 
   /* ======================================================
@@ -409,9 +432,6 @@ export default function JobsPage() {
                     Cancel
                   </button>
                   <div className="flex gap-3">
-                    <button onClick={handlePrintPreview} className="px-4 py-2 border border-slate-200 hover:bg-slate-50 rounded-md transition-colors">
-                      Preview
-                    </button>
                     <button
                       onClick={handleSave}
                       className="bg-green-600 hover:bg-green-700 text-white px-8 py-2 rounded-md transition-colors"
@@ -432,7 +452,7 @@ export default function JobsPage() {
               onStatusChange={handleStatusChange}
               onDelete={handleDelete}
               onGenerateInvoice={handleGenerateInvoice}
-              onGenerateAffidavit={() => {}}
+              onGenerateAffidavit={handleGenerateAffidavit}
             />
           )}
         </AnimatePresence>

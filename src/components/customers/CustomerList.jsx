@@ -251,7 +251,7 @@ export default function CustomerList({
                 
                 return (
                   <motion.tr
-                    key={customer.id}
+                    key={customer._id || customer.id}
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     className="border-b border-slate-100 hover:bg-slate-50 transition-colors"

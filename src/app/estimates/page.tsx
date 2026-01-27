@@ -75,6 +75,7 @@ function EstimatesPageContent(): React.JSX.Element {
   const [showSuccess, setShowSuccess] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
   const [selectedEstimateForView, setSelectedEstimateForView] = useState<Estimate | null>(null);
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   const [lineItemsTotal, setLineItemsTotal] = useState(0);
   const [chargesTotal, setChargesTotal] = useState(0);
@@ -116,6 +117,65 @@ function EstimatesPageContent(): React.JSX.Element {
     total_amount: 0,
   });
 
+  const validateForm = (): boolean => {
+    const newErrors: Record<string, string> = {};
+    
+    // Required fields
+    if (!formData.customer_id?.trim()) {
+      newErrors.customer_id = "Customer is required";
+    }
+    if (!formData.estimate_date?.trim()) {
+      newErrors.estimate_date = "Estimate date is required";
+    }
+    if (!formData.valid_until_date?.trim()) {
+      newErrors.valid_until_date = "Expiration date is required";
+    }
+    
+    // Date validations
+    if (formData.estimate_date?.trim()) {
+      const estimateDate = new Date(formData.estimate_date);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      if (estimateDate > today) {
+        newErrors.estimate_date = "Estimate date cannot be in the future";
+      }
+    }
+    
+    if (formData.valid_until_date?.trim() && formData.estimate_date?.trim()) {
+      const validUntil = new Date(formData.valid_until_date);
+      const estimateDate = new Date(formData.estimate_date);
+      if (validUntil <= estimateDate) {
+        newErrors.valid_until_date = "Expiration date must be after estimate date";
+      }
+    }
+    
+    // Numeric validations
+    if (formData.allowed_variance < 0 || formData.allowed_variance > 100) {
+      newErrors.allowed_variance = "Allowed variance must be between 0 and 100";
+    }
+    if (formData.tax_rate < 0 || formData.tax_rate > 100) {
+      newErrors.tax_rate = "Tax rate must be between 0 and 100";
+    }
+    if (formData.discount_value < 0) {
+      newErrors.discount_value = "Discount value cannot be negative";
+    }
+    
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleFormDataChange = (newData: Estimate) => {
+    setFormData(newData);
+    // Clear errors for fields that have been filled
+    const newErrors = { ...errors };
+    Object.keys(newData).forEach(key => {
+      if (newData[key as keyof Estimate] && newErrors[key]) {
+        delete newErrors[key];
+      }
+    });
+    setErrors(newErrors);
+  };
+
   /* ======================================================
      HELPERS
   ====================================================== */
@@ -153,37 +213,30 @@ function EstimatesPageContent(): React.JSX.Element {
     setEditingEstimate(null);
     setUnsavedLineItems([]);
     setUnsavedCharges([]);
+    setErrors({});
   };
 
   const handleDelete = async (estimateId: string): Promise<void> => {
-    if (window.confirm('Are you sure you want to delete this estimate? This action cannot be undone.')) {
-      try {
-        await dispatch(deleteEstimate(estimateId)).unwrap();
-        showToast("Estimate deleted successfully.");
-        if (editingEstimate?.id === estimateId || editingEstimate?._id === estimateId) {
-          setShowForm(false);
-          setEditingEstimate(null);
-        }
-      } catch (error) {
-        console.error('Failed to delete estimate:', error);
-        alert('Failed to delete estimate. Please try again.');
+    try {
+      await dispatch(deleteEstimate(estimateId)).unwrap();
+      showToast("Estimate deleted successfully.");
+      if (editingEstimate?.id === estimateId || editingEstimate?._id === estimateId) {
+        setShowForm(false);
+        setEditingEstimate(null);
       }
+    } catch (error) {
+      console.error('Failed to delete estimate:', error);
+      showToast('Failed to delete estimate. Please try again.', true);
     }
   };
 
   const handleSave = async (): Promise<void> => {
+    if (!validateForm()) {
+      showToast('Please fix the validation errors before saving.', true);
+      return;
+    }
+
     try {
-      // Validate required fields
-      if (!formData.customer_id || !formData.customer_name) {
-        showToast('Please select a customer before saving the estimate.', true);
-        return;
-      }
-      
-      if (!formData.valid_until_date) {
-        showToast('Please set a valid until date for the estimate.', true);
-        return;
-      }
-      
       if (editingEstimate?.id || editingEstimate?._id) {
         // Phase 2: Update existing estimate with line items and charges
         const estimateData = {
@@ -199,6 +252,7 @@ function EstimatesPageContent(): React.JSX.Element {
         setEditingEstimate(null);
         setUnsavedLineItems([]);
         setUnsavedCharges([]);
+        setErrors({});
       } else {
         // Phase 1: Create estimate with basic details only
         const basicEstimateData = {
@@ -212,7 +266,7 @@ function EstimatesPageContent(): React.JSX.Element {
       }
     } catch (error) {
       console.error('Failed to save estimate:', error);
-      showToast('Failed to save estimate. Please check all required fields.', true);
+      showToast('Failed to save estimate. Please try again.', true);
     }
   };
 
@@ -266,10 +320,10 @@ function EstimatesPageContent(): React.JSX.Element {
             >
               <EstimateHeader
                 data={formData}
-                onChange={setFormData}
+                onChange={handleFormDataChange}
                 customers={customers}
                 locations={locations}
-                errors={{}}
+                errors={errors}
                 isReadOnly={false}
               />
 
@@ -278,18 +332,18 @@ function EstimatesPageContent(): React.JSX.Element {
                 <div className="space-y-6">
                   <CustomerNotesSection
                     data={formData}
-                    onChange={setFormData}
+                    onChange={handleFormDataChange}
                   />
                   <AssumptionsSection
                     data={formData}
-                    onChange={setFormData}
+                    onChange={handleFormDataChange}
                     isReadOnly={false}
                   />
                 </div>
 
                 <EstimateSummary
                   data={formData}
-                  onChange={setFormData}
+                  onChange={handleFormDataChange}
                   lineItemsTotal={lineItemsTotal}
                   chargesTotal={chargesTotal}
                 />
@@ -338,6 +392,7 @@ function EstimatesPageContent(): React.JSX.Element {
                       setEditingEstimate(null);
                       setUnsavedLineItems([]);
                       setUnsavedCharges([]);
+                      setErrors({});
                     }}
                     className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded"
                   >

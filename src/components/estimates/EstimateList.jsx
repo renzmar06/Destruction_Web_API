@@ -118,7 +118,7 @@ export default function EstimateList({ estimates, customers, onView, onEdit, onD
       localStorage.setItem('estimateColumns', JSON.stringify(visibleColumns));
       localStorage.setItem('estimateRowsPerPage', rowsPerPage.toString());
     }
-    alert('Settings saved as default');
+    onShowToast && onShowToast('Settings saved as default');
   };
 
   const handleSendClick = (estimate) => {
@@ -160,25 +160,25 @@ export default function EstimateList({ estimates, customers, onView, onEdit, onD
       }
       setSendDialogOpen(false);
     } else if (sendMethod === 'sms' && sendPhone) {
-      alert('SMS sending not yet implemented');
+      onShowToast && onShowToast('SMS sending not yet implemented', true);
       setSendDialogOpen(false);
     }
   };
 
   const handleDuplicate = async (estimate) => {
-    alert('Duplicate functionality not yet implemented');
+    onShowToast && onShowToast('Duplicate functionality not yet implemented', true);
   };
 
   const handleShareLink = async (estimate) => {
-    alert('Share link functionality not yet implemented');
+    onShowToast && onShowToast('Share link functionality not yet implemented', true);
   };
 
   const handlePrint = async (estimate) => {
-    alert('Print functionality not yet implemented');
+    onShowToast && onShowToast('Print functionality not yet implemented', true);
   };
 
   const handleUpdateStatus = async (estimate) => {
-    alert('Update status functionality not yet implemented');
+    onShowToast && onShowToast('Update status functionality not yet implemented', true);
   };
 
   const handleCopyToPO = (estimate) => {
@@ -188,10 +188,10 @@ export default function EstimateList({ estimates, customers, onView, onEdit, onD
 
   const handlePOSubmit = async () => {
     if (!selectedVendorId) {
-      alert('Please select a vendor');
+      onShowToast && onShowToast('Please select a vendor', true);
       return;
     }
-    alert('Copy to PO functionality not yet implemented');
+    onShowToast && onShowToast('Copy to PO functionality not yet implemented', true);
     setPODialogOpen(false);
     setSelectedVendorId('');
   };
@@ -212,7 +212,7 @@ export default function EstimateList({ estimates, customers, onView, onEdit, onD
       setDeleteModalOpen(false);
       setEstimateToDelete(null);
     } catch (error) {
-      alert('Failed to delete estimate: ' + error.message);
+      onShowToast && onShowToast('Failed to delete estimate: ' + error.message, true);
     } finally {
       setIsDeleting(false);
     }
@@ -301,17 +301,6 @@ export default function EstimateList({ estimates, customers, onView, onEdit, onD
     <div className="">
       {/* Batch Actions & Filters Bar */}
       <div className="flex items-center gap-4">
-        <Select defaultValue="batch">
-          <SelectTrigger className="w-40 h-9 border-slate-300">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="batch">Batch actions</SelectItem>
-            <SelectItem value="send">Send estimates</SelectItem>
-            <SelectItem value="export">Export selected</SelectItem>
-          </SelectContent>
-        </Select>
-
         <div className="flex items-center gap-2">
           <label className="text-sm font-medium text-slate-700">Status</label>
           <Select value={statusFilter} onValueChange={setStatusFilter}>
@@ -487,7 +476,7 @@ export default function EstimateList({ estimates, customers, onView, onEdit, onD
           <tbody className="divide-y divide-slate-200 bg-white">
             {isLoading ? (
               Array.from({ length: 5 }).map((_, idx) => (
-                <tr key={idx}>
+                <tr key={`loading-${idx}`}>
                   <td className="px-4 py-3">
                     <div className="h-4 w-4 bg-slate-200 rounded animate-pulse"></div>
                   </td>
@@ -525,7 +514,7 @@ export default function EstimateList({ estimates, customers, onView, onEdit, onD
                 
                 return (
                   <tr 
-                    key={estimate.id} 
+                    key={estimate._id || estimate.id} 
                     className={`hover:bg-slate-50 cursor-pointer ${isSelected ? 'bg-blue-50' : ''}`}
                     onClick={(e) => handleRowClick(estimate, e)}
                   >
@@ -649,34 +638,9 @@ export default function EstimateList({ estimates, customers, onView, onEdit, onD
                               </>
                             )}
                             
-                            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleDuplicate(estimate); }}>
-                              <Copy className="w-4 h-4 mr-2" />
-                              Duplicate
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleShareLink(estimate); }}>
-                              <LinkIcon className="w-4 h-4 mr-2" />
-                              Share estimate link
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handlePrint(estimate); }}>
-                              <Printer className="w-4 h-4 mr-2" />
-                              Print
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleUpdateStatus(estimate); }}>
-                              Update Status
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleCopyToPO(estimate); }}>
-                              Copy to purchase order
-                            </DropdownMenuItem>
-                            
-                            <DropdownMenuSeparator />
-                            
                             <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleDelete(estimate); }} className="text-red-600">
                               <Trash2 className="w-4 h-4 mr-2" />
                               Delete
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleViewActivity(estimate); }}>
-                              <Activity className="w-4 h-4 mr-2" />
-                              View activity
                             </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
@@ -811,46 +775,6 @@ export default function EstimateList({ estimates, customers, onView, onEdit, onD
         onClose={() => setActivityModalOpen(false)}
       />
 
-      {/* Copy to PO Dialog */}
-      <Dialog open={poDialogOpen} onOpenChange={setPODialogOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Copy to Purchase Order</DialogTitle>
-          </DialogHeader>
-          
-          <div className="space-y-4">
-            <p className="text-sm text-slate-600">
-              Create a purchase order from estimate {selectedEstimate?.estimate_number}
-            </p>
-            
-            <div className="space-y-2">
-              <Label>Select Vendor</Label>
-              <Select value={selectedVendorId} onValueChange={setSelectedVendorId}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Choose a vendor" />
-                </SelectTrigger>
-                <SelectContent>
-                  {vendors.map((vendor) => (
-                    <SelectItem key={vendor.id} value={vendor.id}>
-                      {vendor.company_name || vendor.contact_name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setPODialogOpen(false)}>
-              Cancel
-            </Button>
-            <Button onClick={handlePOSubmit} disabled={!selectedVendorId}>
-              Create Purchase Order
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
       {/* Delete Confirmation Modal */}
       <DeleteEstimateModal
         estimate={estimateToDelete}
@@ -862,45 +786,6 @@ export default function EstimateList({ estimates, customers, onView, onEdit, onD
         onConfirm={handleDeleteConfirm}
         isDeleting={isDeleting}
         />
-
-        {/* Share Link Dialog */}
-        <Dialog open={shareDialogOpen} onOpenChange={setShareDialogOpen}>
-        <DialogContent className="sm:max-w-lg">
-          <DialogHeader>
-            <DialogTitle>Share estimate</DialogTitle>
-            <DialogDescription>
-              Use this link to share the estimate with your customer.
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Textarea
-                value={shareUrl}
-                readOnly
-                className="font-mono text-sm resize-none"
-                rows={3}
-              />
-            </div>
-          </div>
-
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShareDialogOpen(false)}>
-              Close
-            </Button>
-            <Button 
-              onClick={() => {
-                navigator.clipboard.writeText(shareUrl);
-                alert('Estimate link copied.');
-                setShareDialogOpen(false);
-              }}
-              className="bg-blue-600 hover:bg-blue-700"
-            >
-              Copy link
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-        </Dialog>
         </div>
         );
         }

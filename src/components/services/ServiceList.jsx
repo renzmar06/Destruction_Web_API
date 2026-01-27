@@ -126,7 +126,7 @@ export default function ServiceList({ services, onView, onDeactivate, onReactiva
             ) : (
               filteredServices.map((service) => (
                 <motion.tr
-                  key={service.id}
+                  key={service._id || service.id}
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   className="border-b border-slate-100 hover:bg-slate-50 transition-colors"

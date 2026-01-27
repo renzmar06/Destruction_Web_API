@@ -130,7 +130,7 @@ export default function EstimateHeader({ data, onChange, customers, locations, e
             onValueChange={(value) => handleChange('destruction_type', value)}
             disabled={isReadOnly}
           >
-            <SelectTrigger>
+            <SelectTrigger className={errors.destruction_type ? 'border-red-400' : ''}>
               <SelectValue placeholder="Select destruction type" />
             </SelectTrigger>
             <SelectContent>
@@ -139,6 +139,7 @@ export default function EstimateHeader({ data, onChange, customers, locations, e
               <SelectItem value="packaging_destruction">Packaging Destruction</SelectItem>
             </SelectContent>
           </Select>
+          {errors.destruction_type && <p className="text-xs text-red-500">{errors.destruction_type}</p>}
         </div>
 
         <div className="space-y-2">
@@ -148,7 +149,7 @@ export default function EstimateHeader({ data, onChange, customers, locations, e
             onValueChange={(value) => handleChange('primary_service_location_id', value)}
             disabled={isReadOnly || !data.customer_id}
           >
-            <SelectTrigger>
+            <SelectTrigger className={errors.primary_service_location_id ? 'border-red-400' : ''}>
               <SelectValue placeholder={data.customer_id ? "Select location" : "Select customer first"} />
             </SelectTrigger>
             <SelectContent>
@@ -162,6 +163,7 @@ export default function EstimateHeader({ data, onChange, customers, locations, e
               ))}
             </SelectContent>
           </Select>
+          {errors.primary_service_location_id && <p className="text-xs text-red-500">{errors.primary_service_location_id}</p>}
         </div>
 
         <div className="space-y-2">

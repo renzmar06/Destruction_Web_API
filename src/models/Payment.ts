@@ -22,7 +22,7 @@ const PaymentSchema = new mongoose.Schema({
   
   // For Stripe payments
   invoice_id: { type: mongoose.Schema.Types.ObjectId, ref: 'Invoice' },
-  stripe_payment_intent_id: { type: String },
+  stripe_payment_intent_id: { type: String, sparse: true },
   amount: { type: Number },
   currency: { type: String, default: 'usd' },
   status: { 
@@ -33,5 +33,8 @@ const PaymentSchema = new mongoose.Schema({
   customer_email: { type: String },
   metadata: { type: Object, default: {} }
 }, { timestamps: true });
+
+// Create sparse index for stripe_payment_intent_id to handle null values
+PaymentSchema.index({ stripe_payment_intent_id: 1 }, { sparse: true, unique: true });
 
 export default mongoose.models.Payment || mongoose.model('Payment', PaymentSchema);
