@@ -10,6 +10,8 @@ import vendorsReducer from './slices/vendorsSlice';
 import affidavitsReducer from './slices/affidavitsSlice';
 import expensesReducer from './slices/expensesSlice';
 import messagesReducer from './slices/messagesSlice';
+import companyInfoReducer from './slices/companyInfoSlice';
+import salesSettingsReducer from './slices/salesSettingsSlice';
 
 export const store = configureStore({
   reducer: {
@@ -24,6 +26,8 @@ export const store = configureStore({
     affidavits: affidavitsReducer,
     expenses: expensesReducer,
     messages: messagesReducer,
+    companyInfo: companyInfoReducer,
+    salesSettings: salesSettingsReducer,
   },
 });
 
