@@ -18,9 +18,22 @@ const AffidavitSchema = new mongoose.Schema({
   },
   job_reference: String,
   customer_name: String,
+  service_provider_name: String,
+  service_provider_ein: String,
+  service_provider_address: String,
+  job_location: String,
+  job_completion_date: String,
+  destruction_method: String,
   description_of_materials: String,
   description_of_process: String,
   date_issued: Date,
+  attached_documents: [{
+    document_id: String,
+    file_name: String,
+    file_path: String,
+    file_type: String,
+    upload_date: { type: Date, default: Date.now }
+  }],
   user_id: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',

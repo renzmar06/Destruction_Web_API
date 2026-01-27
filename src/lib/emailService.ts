@@ -2,7 +2,7 @@ import nodemailer from 'nodemailer';
 import MailConfig from '@/models/MailConfig';
 import { connectDB } from '@/lib/mongodb';
 
-export async function sendEmail(to: string, subject: string, html: string) {
+export async function sendEmail(to: string, subject: string, html: string, attachments: any[] = []) {
   try {
     await connectDB();
     
@@ -38,6 +38,7 @@ export async function sendEmail(to: string, subject: string, html: string) {
       to,
       subject,
       html,
+      attachments
     });
 
     return { success: true, messageId: result.messageId };

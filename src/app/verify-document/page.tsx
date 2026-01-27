@@ -1,281 +1,147 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
-import {
-  CheckCircle,
-  XCircle,
-  AlertTriangle,
-  Shield,
-  Copy,
-  Check,
-} from "lucide-react";
-import { format } from "date-fns";
+import React, { useState, useEffect, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
+import { motion } from "framer-motion";
+import { CheckCircle, FileCheck, AlertCircle } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
-/* ---------------- TYPES ---------------- */
-type Affidavit = {
-  affidavit_number: string;
-  affidavit_status: "pending" | "issued" | "locked";
-  customer_name?: string;
-  job_reference?: string;
-  job_location?: string;
-  job_completion_date?: string;
-  destruction_method?: string;
-  issued_timestamp?: string;
-  revoked?: boolean;
-  revoked_timestamp?: string;
-  revocation_reason?: string;
-  document_hash?: string;
-  service_provider_name?: string;
-};
+function VerifyDocumentContent() {
+  const searchParams = useSearchParams();
+  const [loading, setLoading] = useState(false);
+  const [verified, setVerified] = useState(false);
+  const [error, setError] = useState("");
+  const [documentId, setDocumentId] = useState("");
+  const [token, setToken] = useState("");
 
-/* ---------------- PAGE ---------------- */
-export default function VerifyDocumentPage() {
-  const [documentNumber, setDocumentNumber] = useState("");
-  const [searchInitiated, setSearchInitiated] = useState(false);
-  const [copiedHash, setCopiedHash] = useState(false);
-
-  /* STATIC MOCK DOCUMENT (replace later with API) */
-  const [affidavit, setAffidavit] = useState<Affidavit | null>(null);
-
-  /* URL PARAM SUPPORT */
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const doc = params.get("doc");
-    if (doc) {
-      setDocumentNumber(doc);
-      setSearchInitiated(true);
-      mockLookup(doc);
-    }
-  }, []);
+    const docParam = searchParams.get('doc');
+    const tokenParam = searchParams.get('token');
+    
+    if (docParam) setDocumentId(docParam);
+    if (tokenParam) setToken(tokenParam);
+  }, [searchParams]);
 
-  /* HASH GENERATOR (UNCHANGED LOGIC) */
-  const generateHashLock = (data: any) => {
-    const str = JSON.stringify(data);
-    let hash = 0;
-    for (let i = 0; i < str.length; i++) {
-      const char = str.charCodeAt(i);
-      hash = (hash << 5) - hash + char;
-      hash = hash & hash;
+  const handleVerify = async () => {
+    if (!token || !documentId) {
+      setError("Invalid verification link");
+      return;
     }
-    return Math.abs(hash).toString(16).toUpperCase().padStart(64, "0");
-  };
 
-  /* MOCK VERIFY (STATIC) */
-  const mockLookup = (doc: string) => {
-    if (doc.toUpperCase() === "AFF-1001") {
-      const issued = new Date().toISOString();
-      const hash = generateHashLock({
-        doc_id: doc,
-        issued,
-        customer: "Acme Corp",
-        job: "JOB-7788",
+    setLoading(true);
+    setError("");
+
+    try {
+      const response = await fetch('/api/document-verification/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token, document_id: documentId })
       });
-
-      setAffidavit({
-        affidavit_number: doc,
-        affidavit_status: "issued",
-        customer_name: "Acme Corp",
-        job_reference: "JOB-7788",
-        job_location: "Dallas, TX",
-        job_completion_date: issued,
-        destruction_method: "secure_shredding",
-        issued_timestamp: issued,
-        service_provider_name: "DestructionOps LLC",
-        document_hash: hash,
-      });
-    } else {
-      setAffidavit(null);
+      
+      const data = await response.json();
+      if (data.success) {
+        setVerified(true);
+      } else {
+        setError(data.message);
+      }
+    } catch (error) {
+      console.error('Verification error:', error);
+      setError('Failed to verify document');
+    } finally {
+      setLoading(false);
     }
-  };
-
-  const handleVerify = () => {
-    if (!documentNumber.trim()) return;
-    setSearchInitiated(true);
-    mockLookup(documentNumber.trim());
-  };
-
-  const documentHash = affidavit
-    ? generateHashLock({
-        doc_id: affidavit.affidavit_number,
-        issued: affidavit.issued_timestamp,
-        customer: affidavit.customer_name,
-        job: affidavit.job_reference,
-      })
-    : "";
-
-  const storedHash = affidavit?.document_hash || documentHash;
-  const hashMatched = documentHash === storedHash;
-
-  const isValid =
-    affidavit &&
-    !affidavit.revoked &&
-    (affidavit.affidavit_status === "issued" ||
-      affidavit.affidavit_status === "locked");
-
-  const copyHash = () => {
-    navigator.clipboard.writeText(`SHA256:${storedHash}`);
-    setCopiedHash(true);
-    setTimeout(() => setCopiedHash(false), 2000);
   };
 
   return (
-    <div className="min-h-screen bg-white">
-      {/* Header */}
-      <div className="border-b bg-slate-50">
-        <div className="max-w-5xl mx-auto px-6 py-8">
-          <div className="flex items-center gap-3 mb-3">
-            <Shield className="w-8 h-8 text-slate-700" />
-            <h1 className="text-2xl font-bold">Official Document Verification</h1>
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="bg-white rounded-2xl shadow-xl p-8 max-w-md w-full"
+      >
+        <div className="text-center">
+          <div className="p-4 bg-blue-100 rounded-full w-20 h-20 mx-auto mb-6 flex items-center justify-center">
+            <FileCheck className="w-10 h-10 text-blue-600" />
           </div>
-          <p className="text-sm text-slate-600">
-            Verify the authenticity of a system-issued compliance document.
-          </p>
-        </div>
-      </div>
 
-      <div className="max-w-5xl mx-auto px-6 py-8">
-        {/* Search */}
-        {!affidavit && (
-          <div className="mb-8 border bg-slate-50 p-6">
-            <label className="block text-sm font-semibold mb-2">
-              Document Number
-            </label>
-            <div className="flex gap-3">
-              <input
-                type="text"
-                placeholder="AFF-1001"
-                value={documentNumber}
-                onChange={(e) => setDocumentNumber(e.target.value)}
-                className="flex-1 px-4 py-2 border"
-              />
-              <button
-                onClick={handleVerify}
-                className="px-6 py-2 bg-slate-900 text-white"
-              >
-                Verify
-              </button>
-            </div>
-          </div>
-        )}
+          <h1 className="text-2xl font-bold text-slate-900 mb-2">
+            Document Verification
+          </h1>
+          
+          {documentId && (
+            <p className="text-slate-600 mb-6">
+              Document ID: <span className="font-semibold">{documentId}</span>
+            </p>
+          )}
 
-        {searchInitiated && (
-          <>
-            {affidavit ? (
-              <>
-                {/* STATUS */}
-                <div
-                  className={`border-l-4 p-4 mb-6 ${
-                    isValid
-                      ? "bg-green-50 border-green-600"
-                      : "bg-red-50 border-red-600"
-                  }`}
-                >
-                  <div className="flex gap-3">
-                    {isValid ? (
-                      <CheckCircle className="w-6 h-6 text-green-600" />
-                    ) : (
-                      <XCircle className="w-6 h-6 text-red-600" />
-                    )}
-                    <div>
-                      <p className="font-bold text-sm">
-                        STATUS: {isValid ? "VALID" : "INVALID"}
-                      </p>
-                      <p className="text-sm text-slate-700">
-                        Issued:{" "}
-                        {format(
-                          new Date(affidavit.issued_timestamp!),
-                          "MMM d, yyyy HH:mm"
-                        )}{" "}
-                        UTC
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* SUMMARY */}
-                <div className="border mb-6">
-                  <div className="bg-slate-100 px-4 py-3 font-bold">
-                    Document Summary
-                  </div>
-                  <div className="p-6 text-sm space-y-2">
-                    <p>
-                      <strong>ID:</strong>{" "}
-                      <span className="font-mono">
-                        {affidavit.affidavit_number}
-                      </span>
-                    </p>
-                    <p>
-                      <strong>Customer:</strong> {affidavit.customer_name}
-                    </p>
-                    <p>
-                      <strong>Job:</strong> {affidavit.job_reference}
-                    </p>
-                    <p>
-                      <strong>Provider:</strong>{" "}
-                      {affidavit.service_provider_name}
-                    </p>
-                  </div>
-                </div>
-
-                {/* HASH */}
-                <div className="border mb-6">
-                  <div className="bg-slate-100 px-4 py-3 font-bold">
-                    Document Integrity
-                  </div>
-                  <div className="p-6">
-                    <div className="flex justify-between mb-2">
-                      <span className="text-xs font-semibold">Hash</span>
-                      <button
-                        onClick={copyHash}
-                        className="text-xs flex items-center gap-1"
-                      >
-                        {copiedHash ? (
-                          <Check className="w-3 h-3" />
-                        ) : (
-                          <Copy className="w-3 h-3" />
-                        )}
-                        {copiedHash ? "Copied" : "Copy"}
-                      </button>
-                    </div>
-                    <p className="font-mono text-xs bg-slate-50 p-3 break-all">
-                      SHA256:{storedHash}
-                    </p>
-                    <p
-                      className={`font-bold mt-2 ${
-                        hashMatched ? "text-green-700" : "text-red-700"
-                      }`}
-                    >
-                      {hashMatched ? "HASH MATCHED" : "HASH MISMATCH"}
-                    </p>
-                  </div>
-                </div>
-              </>
-            ) : (
-              <div className="border border-red-600 bg-red-50 p-12 text-center">
-                <XCircle className="w-16 h-16 text-red-600 mx-auto mb-4" />
-                <h3 className="text-xl font-bold text-red-900">
-                  Document Not Found
-                </h3>
-                <p className="text-red-700 mt-2">
-                  No document with number "{documentNumber}" exists.
-                </p>
+          {verified ? (
+            <motion.div
+              initial={{ scale: 0.8 }}
+              animate={{ scale: 1 }}
+              className="text-center"
+            >
+              <div className="p-4 bg-green-100 rounded-full w-20 h-20 mx-auto mb-4 flex items-center justify-center">
+                <CheckCircle className="w-10 h-10 text-green-600" />
               </div>
-            )}
-          </>
-        )}
+              <h2 className="text-xl font-semibold text-green-800 mb-2">
+                Document Verified Successfully!
+              </h2>
+              <p className="text-green-600">
+                This document has been verified and logged in our system.
+              </p>
+            </motion.div>
+          ) : error ? (
+            <div className="text-center">
+              <div className="p-4 bg-red-100 rounded-full w-20 h-20 mx-auto mb-4 flex items-center justify-center">
+                <AlertCircle className="w-10 h-10 text-red-600" />
+              </div>
+              <h2 className="text-xl font-semibold text-red-800 mb-2">
+                Verification Failed
+              </h2>
+              <p className="text-red-600 mb-4">{error}</p>
+            </div>
+          ) : (
+            <div className="text-center">
+              <p className="text-slate-600 mb-6">
+                Click the button below to verify this document and confirm its authenticity.
+              </p>
+              
+              <Button
+                onClick={handleVerify}
+                disabled={loading || !token || !documentId}
+                className="w-full bg-blue-600 hover:bg-blue-700 py-3"
+              >
+                {loading ? (
+                  <div className="flex items-center gap-2">
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                    Verifying...
+                  </div>
+                ) : (
+                  "Verify Document"
+                )}
+              </Button>
+            </div>
+          )}
 
-        {/* Footer */}
-        <div className="mt-12 pt-6 border-t text-xs text-slate-600 flex justify-between">
-          <div>
-            <p>Verification System v1.0</p>
-            <p>{format(new Date(), "yyyy-MM-dd HH:mm:ss")} UTC</p>
-          </div>
-          <div className="text-right">
-            <p>Public Verification</p>
-            <p>{window.location.origin}/verify-document</p>
+          <div className="mt-8 pt-6 border-t border-slate-200">
+            <p className="text-xs text-slate-500 text-center">
+              This verification is provided by Destruction Services
+            </p>
           </div>
         </div>
-      </div>
+      </motion.div>
     </div>
+  );
+}
+
+export default function VerifyDocumentPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      </div>
+    }>
+      <VerifyDocumentContent />
+    </Suspense>
   );
 }

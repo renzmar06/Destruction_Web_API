@@ -46,6 +46,13 @@ export default function AffidavitsPage() {
     description_of_process: ""
   });
   const [selectedMediaIds, setSelectedMediaIds] = useState<string[]>([]);
+  const [attachedDocuments, setAttachedDocuments] = useState<{
+    document_id: string;
+    file_name: string;
+    file_path: string;
+    file_type: string;
+    upload_date: Date;
+  }[]>([]);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const [showSuccess, setShowSuccess] = useState(false);
@@ -99,6 +106,7 @@ export default function AffidavitsPage() {
     });
     setEditingAffidavit(null);
     setSelectedMediaIds([]);
+    setAttachedDocuments([]);
     setShowJobSelector(false);
     setShowForm(true);
   };
@@ -107,14 +115,19 @@ export default function AffidavitsPage() {
     if (!validateForm()) return;
 
     try {
+      const dataToSave = {
+        ...formData,
+        attached_documents: attachedDocuments
+      };
+
       if (editingAffidavit) {
         await dispatch(updateAffidavit({ 
           id: editingAffidavit._id || editingAffidavit.id!, 
-          data: formData 
+          data: dataToSave 
         })).unwrap();
         showToast("Affidavit updated successfully.");
       } else {
-        await dispatch(createAffidavit(formData)).unwrap();
+        await dispatch(createAffidavit(dataToSave)).unwrap();
         showToast("Affidavit created successfully.");
       }
 
@@ -135,16 +148,45 @@ export default function AffidavitsPage() {
         description_of_materials: "",
         description_of_process: ""
       });
+      setAttachedDocuments([]);
     } catch (error: any) {
       const errorMessage = error?.message || 'Unknown error occurred';
       alert('Failed to save affidavit: ' + errorMessage);
     }
   };
 
-  const handleView = (affidavit: Affidavit) => {
-    setEditingAffidavit(affidavit);
-    setFormData(affidavit);
-    setShowForm(true);
+  const handleView = async (affidavit: Affidavit) => {
+    try {
+      const response = await fetch(`/api/affidavits/${affidavit._id || affidavit.id}`);
+      const result = await response.json();
+      
+      if (result.success) {
+        const data = result.data;
+        setEditingAffidavit(data);
+        setFormData({
+          affidavit_number: data.affidavit_number || "",
+          affidavit_status: data.affidavit_status || "pending",
+          job_id: data.job_id || "",
+          job_reference: data.job_reference || "",
+          customer_name: data.customer_name || "",
+          service_provider_name: data.service_provider_name || "",
+          service_provider_ein: data.service_provider_ein || "",
+          service_provider_address: data.service_provider_address || "",
+          job_location: data.job_location || "",
+          job_completion_date: data.job_completion_date || "",
+          destruction_method: data.destruction_method || "",
+          description_of_materials: data.description_of_materials || "",
+          description_of_process: data.description_of_process || ""
+        });
+        setAttachedDocuments(data.attached_documents || []);
+        setShowForm(true);
+      } else {
+        alert('Failed to load affidavit data');
+      }
+    } catch (error) {
+      console.error('Error loading affidavit:', error);
+      alert('Failed to load affidavit data');
+    }
   };
 
   const handleIssue = async (affidavit: Affidavit) => {
@@ -215,7 +257,16 @@ export default function AffidavitsPage() {
       description_of_process: ""
     });
     setSelectedMediaIds([]);
+    setAttachedDocuments([]);
     setErrors({});
+  };
+
+  const handleDocumentAttach = (document: any, removeId?: string) => {
+    if (removeId) {
+      setAttachedDocuments(prev => prev.filter(doc => doc.document_id !== removeId));
+    } else if (document) {
+      setAttachedDocuments(prev => [...prev, document]);
+    }
   };
 
   const isReadOnly =
@@ -350,6 +401,8 @@ export default function AffidavitsPage() {
                     selectedMediaIds={selectedMediaIds}
                     onSelectionChange={setSelectedMediaIds}
                     isReadOnly={isReadOnly}
+                    attachedDocuments={attachedDocuments}
+                    onDocumentAttach={handleDocumentAttach}
                   />
                 </div>
               </details>

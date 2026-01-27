@@ -17,6 +17,13 @@ export interface Affidavit {
   description_of_materials?: string;
   description_of_process?: string;
   date_issued?: string;
+  attached_documents?: {
+    document_id: string;
+    file_name: string;
+    file_path: string;
+    file_type: string;
+    upload_date: Date;
+  }[];
   user_id?: string;
 }
 

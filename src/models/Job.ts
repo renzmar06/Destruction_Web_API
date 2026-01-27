@@ -31,7 +31,7 @@ const jobSchema = new mongoose.Schema({
   user_id: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
   job_id: { type: String, required: true, unique: true },
   job_name: { type: String, required: true },
-  customer_id: { type: mongoose.Schema.Types.ObjectId, ref: 'Customer', required: true },
+  customer_id: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
   customer_name: { type: String, required: true },
   estimate_id: { type: mongoose.Schema.Types.ObjectId, ref: 'Estimate', required: true },
   estimate_number: { type: String, required: true },
