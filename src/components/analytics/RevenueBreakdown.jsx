@@ -8,10 +8,13 @@ export default function RevenueBreakdown({ invoices, customers, jobs }) {
 
   // Revenue by Customer
   const revenueByCustomer = customers.map(customer => {
-    const customerInvoices = invoices.filter(inv => inv.customer_id === customer.id);
+    const customerId = customer.id || customer._id;
+    const customerInvoices = invoices.filter(inv => 
+      inv.customer_id === customerId || inv.customer_id === customer.id || inv.customer_id === customer._id
+    );
     const total = customerInvoices.reduce((sum, inv) => sum + (inv.total_amount || 0), 0);
     return {
-      name: customer.legal_company_name,
+      name: customer.legal_company_name || customer.company_name || `Customer ${customerId}`,
       total,
       count: customerInvoices.length
     };
@@ -19,10 +22,13 @@ export default function RevenueBreakdown({ invoices, customers, jobs }) {
 
   // Revenue by Job
   const revenueByJob = jobs.map(job => {
-    const jobInvoices = invoices.filter(inv => inv.job_id === job.id);
+    const jobId = job.id || job._id;
+    const jobInvoices = invoices.filter(inv => 
+      inv.job_id === jobId || inv.job_id === job.id || inv.job_id === job._id
+    );
     const total = jobInvoices.reduce((sum, inv) => sum + (inv.total_amount || 0), 0);
     return {
-      name: `${job.job_id} - ${job.job_name}`,
+      name: `Job ${jobId}`,
       total,
       count: jobInvoices.length
     };
@@ -39,9 +45,8 @@ export default function RevenueBreakdown({ invoices, customers, jobs }) {
 
   // This would ideally come from line items, but we'll aggregate from jobs
   invoices.forEach(invoice => {
-    const job = jobs.find(j => j.id === invoice.job_id);
+    const job = jobs.find(j => (j.id || j._id) === invoice.job_id);
     if (job) {
-      // Simplified - in real implementation, would check line items
       const unit = 'flat_fee'; // Default
       if (pricingUnits[unit]) {
         pricingUnits[unit].total += invoice.total_amount || 0;

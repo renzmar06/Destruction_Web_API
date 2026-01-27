@@ -19,15 +19,21 @@ export default function JobList({ jobs, customers, onView, onEdit, onDelete, onS
   const [statusFilter, setStatusFilter] = useState('all');
   const [customerFilter, setCustomerFilter] = useState('all');
 
-  const getCustomerName = (customerId) => {
-    const customer = customers.find(c => c._id === customerId);
-    return customer?.legal_company_name || customer?.display_name || 'Unknown';
+  const getCustomerName = (job) => {
+    // First try to use the customer_name from the job itself
+    if (job.customer_name) {
+      return job.customer_name;
+    }
+    
+    // Then try to find the customer by ID
+    const customer = customers.find(c => c._id === job.customer_id || c.id === job.customer_id);
+    return customer?.legal_company_name || customer?.display_name || customer?.name || 'Unknown';
   };
 
   const filteredJobs = jobs.filter(job => {
     const matchesSearch = job.job_id?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          job.job_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         getCustomerName(job.customer_id).toLowerCase().includes(searchTerm.toLowerCase());
+                         getCustomerName(job).toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = statusFilter === 'all' || job.job_status === statusFilter;
     const matchesCustomer = customerFilter === 'all' || job.customer_id === customerFilter;
     return matchesSearch && matchesStatus && matchesCustomer;
@@ -116,7 +122,7 @@ export default function JobList({ jobs, customers, onView, onEdit, onDelete, onS
                 >
                   <TableCell className="font-medium text-slate-900">{job.job_id}</TableCell>
                   <TableCell className="text-slate-700">{job.job_name}</TableCell>
-                  <TableCell className="text-slate-700">{getCustomerName(job.customer_id)}</TableCell>
+                  <TableCell className="text-slate-700">{getCustomerName(job)}</TableCell>
                   <TableCell>
                     <Badge className={statusConfig[job.job_status]?.className}>
                       {statusConfig[job.job_status]?.label}

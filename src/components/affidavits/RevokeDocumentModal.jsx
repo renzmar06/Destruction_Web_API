@@ -1,47 +1,36 @@
 import React, { useState } from 'react';
-import { base44 } from "@/api/base44Client";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useDispatch } from 'react-redux';
+import { updateAffidavit, fetchAffidavits } from '@/redux/slices/affidavitsSlice';
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { AlertTriangle, X } from "lucide-react";
 
-export default function RevokeDocumentModal({ affidavit, onClose }) {
+export default function RevokeDocumentModal({ affidavit, onClose, onSuccess }) {
   const [reason, setReason] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const queryClient = useQueryClient();
-
-  const revokeMutation = useMutation({
-    mutationFn: async () => {
-      const user = await base44.auth.me();
-      return base44.entities.Affidavit.update(affidavit.id, {
-        revoked: true,
-        revoked_timestamp: new Date().toISOString(),
-        revoked_by: user.email,
-        revocation_reason: reason,
-        affidavit_status: 'revoked'
-      });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['affidavits'] });
-      onClose();
-    }
-  });
+  const dispatch = useDispatch();
 
   const handleRevoke = async () => {
     if (!reason.trim()) {
-      alert('Revocation reason is required');
-      return;
-    }
-
-    if (!confirm('CRITICAL ACTION: This will permanently revoke the document. The document will remain publicly visible but marked as REVOKED. This action cannot be undone. Continue?')) {
       return;
     }
 
     setIsSubmitting(true);
     try {
-      await revokeMutation.mutateAsync();
+      await dispatch(updateAffidavit({
+        id: affidavit._id || affidavit.id,
+        data: {
+          affidavit_status: 'revoked',
+          revoked: true,
+          revoked_timestamp: new Date().toISOString(),
+          revocation_reason: reason
+        }
+      })).unwrap();
+      await dispatch(fetchAffidavits());
+      onSuccess?.('Affidavit revoked successfully.');
+      onClose();
     } catch (error) {
-      alert('Failed to revoke document: ' + error.message);
+      onSuccess?.('Failed to revoke affidavit: ' + (error?.message || 'Unknown error'));
     } finally {
       setIsSubmitting(false);
     }

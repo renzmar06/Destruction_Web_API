@@ -26,6 +26,8 @@ export default function DocumentVerificationPage() {
   const [searchResult, setSearchResult] = useState<Verification | null>(null);
   const [showSuccess, setShowSuccess] = useState<boolean>(false);
   const [successMessage, setSuccessMessage] = useState<string>("");
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [itemsPerPage, setItemsPerPage] = useState<number>(10);
 
   useEffect(() => {
     fetchVerifications();
@@ -117,6 +119,14 @@ export default function DocumentVerificationPage() {
     }
   };
 
+  // Pagination logic
+  const totalPages = Math.ceil(verifications.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const currentVerifications = verifications.slice(startIndex, endIndex);
+
+
+
   return (
     <div className="min-h-screen bg-slate-50">
       <div className="max-w-7xl mx-auto px-4 py-8">
@@ -151,8 +161,31 @@ export default function DocumentVerificationPage() {
 
         {/* Verifications List */}
         <div className="bg-white rounded-2xl border">
-          <div className="p-6 border-b">
-            <h2 className="text-xl font-semibold">Document Verifications</h2>
+          <div className="p-6 border-b flex justify-between items-center">
+            <div className="flex items-center gap-4">
+              <h2 className="text-xl font-semibold">Document Verifications</h2>
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-slate-600">Show:</span>
+                <select 
+                  value={itemsPerPage} 
+                  onChange={(e) => {
+                    setItemsPerPage(Number(e.target.value));
+                    setCurrentPage(1);
+                  }}
+                  className="px-3 py-1 border border-slate-300 rounded text-sm"
+                >
+                  <option value={10}>10</option>
+                  <option value={20}>20</option>
+                  <option value={50}>50</option>
+                  <option value={80}>80</option>
+                </select>
+              </div>
+            </div>
+            {verifications.length > 0 && (
+              <span className="text-sm text-slate-500">
+                Showing {startIndex + 1}-{Math.min(endIndex, verifications.length)} of {verifications.length}
+              </span>
+            )}
           </div>
 
           {loading ? (
@@ -166,71 +199,100 @@ export default function DocumentVerificationPage() {
               <p className="text-slate-600">No document verifications found</p>
             </div>
           ) : (
-            <div className="divide-y">
-              {verifications.map((verification) => (
-                <div key={verification._id} className="p-6">
-                  <div className="flex items-center justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-2">
-                        <span className="font-semibold text-lg">{verification.document_id}</span>
-                        <span className={`px-3 py-1 rounded-full text-sm font-medium flex items-center gap-1 ${getStatusColor(verification.verification_status)}`}>
-                          {getStatusIcon(verification.verification_status)}
-                          {verification.verification_status}
-                        </span>
+            <>
+              <div className="divide-y">
+                {currentVerifications.map((verification) => (
+                  <div key={verification._id} className="p-6">
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-3 mb-2">
+                          <span className="font-semibold text-lg">{verification.document_id}</span>
+                          <span className={`px-3 py-1 rounded-full text-sm font-medium flex items-center gap-1 ${getStatusColor(verification.verification_status)}`}>
+                            {getStatusIcon(verification.verification_status)}
+                            {verification.verification_status}
+                          </span>
+                        </div>
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-slate-600">
+                          <div>
+                            <span className="font-medium">Affidavit:</span> {verification.affidavit_id?.affidavit_number}
+                          </div>
+                          <div>
+                            <span className="font-medium">Customer:</span> {verification.customer_email}
+                          </div>
+                          <div>
+                            <span className="font-medium">Created:</span> {new Date(verification.createdAt).toLocaleDateString()}
+                          </div>
+                        </div>
+
+                        {verification.email_sent_date && (
+                          <div className="text-sm text-slate-500 mt-2">
+                            Email sent: {new Date(verification.email_sent_date).toLocaleString()}
+                          </div>
+                        )}
+
+                        {verification.verified_date && (
+                          <div className="text-sm text-green-600 mt-2">
+                            Verified: {new Date(verification.verified_date).toLocaleString()}
+                          </div>
+                        )}
                       </div>
-                      
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-slate-600">
-                        <div>
-                          <span className="font-medium">Affidavit:</span> {verification.affidavit_id?.affidavit_number}
-                        </div>
-                        <div>
-                          <span className="font-medium">Customer:</span> {verification.customer_email}
-                        </div>
-                        <div>
-                          <span className="font-medium">Created:</span> {new Date(verification.createdAt).toLocaleDateString()}
-                        </div>
+
+                      <div className="flex gap-2">
+                        {verification.verification_status === 'pending' && (
+                          <Button
+                            onClick={() => handleSendEmail(verification.document_id)}
+                            disabled={sendingEmail === verification.document_id}
+                            className="bg-blue-600 hover:bg-blue-700 gap-2"
+                          >
+                            {sendingEmail === verification.document_id ? (
+                              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                            ) : (
+                              <Send className="w-4 h-4" />
+                            )}
+                            {sendingEmail === verification.document_id ? 'Sending...' : 'Send Email'}
+                          </Button>
+                        )}
+                        
+                        {verification.verification_status === 'verified' && (
+                          <div className="flex items-center gap-2 text-green-600">
+                            <CheckCircle className="w-5 h-5" />
+                            <span className="font-medium">Verified</span>
+                          </div>
+                        )}
                       </div>
-
-                      {verification.email_sent_date && (
-                        <div className="text-sm text-slate-500 mt-2">
-                          Email sent: {new Date(verification.email_sent_date).toLocaleString()}
-                        </div>
-                      )}
-
-                      {verification.verified_date && (
-                        <div className="text-sm text-green-600 mt-2">
-                          Verified: {new Date(verification.verified_date).toLocaleString()}
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="flex gap-2">
-                      {verification.verification_status === 'pending' && (
-                        <Button
-                          onClick={() => handleSendEmail(verification.document_id)}
-                          disabled={sendingEmail === verification.document_id}
-                          className="bg-blue-600 hover:bg-blue-700 gap-2"
-                        >
-                          {sendingEmail === verification.document_id ? (
-                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                          ) : (
-                            <Send className="w-4 h-4" />
-                          )}
-                          {sendingEmail === verification.document_id ? 'Sending...' : 'Send Email'}
-                        </Button>
-                      )}
-                      
-                      {verification.verification_status === 'verified' && (
-                        <div className="flex items-center gap-2 text-green-600">
-                          <CheckCircle className="w-5 h-5" />
-                          <span className="font-medium">Verified</span>
-                        </div>
-                      )}
                     </div>
                   </div>
+                ))}
+              </div>
+
+              {/* Pagination */}
+              {totalPages > 1 && (
+                <div className="p-6 border-t flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setCurrentPage(currentPage - 1)}
+                      disabled={currentPage === 1}
+                    >
+                      Previous
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setCurrentPage(currentPage + 1)}
+                      disabled={currentPage === totalPages}
+                    >
+                      Next
+                    </Button>
+                  </div>
+                  <div className="text-sm text-slate-600">
+                    Page {currentPage} of {totalPages}
+                  </div>
                 </div>
-              ))}
-            </div>
+              )}
+            </>
           )}
         </div>
 

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Plus, CheckCircle, Upload } from 'lucide-react';
+import { Plus, CheckCircle, Upload, Download } from 'lucide-react';
 import { useAppDispatch, useAppSelector } from '@/redux/hooks';
 import { fetchCustomers } from '@/redux/slices/customersSlice';
 import InvoiceList from '@/components/invoices/InvoiceList';
@@ -63,9 +63,37 @@ export default function Invoices() {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [invoiceToDelete, setInvoiceToDelete] = useState<Invoice | null>(null);
   const [sendingInvoice, setSendingInvoice] = useState<string | null>(null);
-  const [lineItems, setLineItems] = useState([{ id: 1, description: '', quantity: 1, rate: 0, amount: 0 }]);
+  const [errors, setErrors] = useState<Record<string, string>>({});
   const [attachments, setAttachments] = useState<{id: number, name: string, url: string}[]>([]);
   const [uploading, setUploading] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
+  const [lineItems, setLineItems] = useState<{id: number, description: string, quantity: number, rate: number, amount: number}[]>([{id: 1, description: '', quantity: 1, rate: 0, amount: 0}]);
+  const handleExportSelected = async () => {
+    setIsExporting(true);
+    try {
+      let csvContent = "Invoice Export\n\n";
+      csvContent += "Invoice Number,Customer,Email,Status,Issue Date,Due Date,Total Amount\n";
+      
+      invoices.forEach(invoice => {
+        csvContent += `${invoice.invoice_number},${invoice.customer_name},${invoice.customer_email},${invoice.invoice_status},${invoice.issue_date},${invoice.due_date},${invoice.total_amount}\n`;
+      });
+      
+      const blob = new Blob([csvContent], { type: 'text/csv' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `invoices-export-${new Date().toISOString().split('T')[0]}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+      showSuccessToast('Invoices exported successfully.');
+    } catch (error) {
+      showSuccessToast('Failed to export invoices.');
+    } finally {
+      setIsExporting(false);
+    }
+  };
   const [formData, setFormData] = useState<Partial<Invoice>>({
     user_id: '',
     invoice_number: '',
@@ -111,6 +139,92 @@ export default function Invoices() {
   useEffect(() => {
     console.log('Invoices state:', { invoices, loading, error });
   }, [invoices, loading, error]);
+
+  const validateForm = (): boolean => {
+    const newErrors: Record<string, string> = {};
+    
+    // Required fields
+    if (!formData.customer_name?.trim()) {
+      newErrors.customer_name = "Customer is required";
+    }
+    if (!formData.customer_email?.trim()) {
+      newErrors.customer_email = "Customer email is required";
+    }
+    if (!formData.due_date?.trim()) {
+      newErrors.due_date = "Due date is required";
+    }
+    if (!formData.issue_date?.trim()) {
+      newErrors.issue_date = "Invoice date is required";
+    }
+    
+    // Email validation
+    if (formData.customer_email?.trim()) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(formData.customer_email)) {
+        newErrors.customer_email = "Please enter a valid email address";
+      }
+    }
+    
+    // CC/BCC email validation
+    if (formData.cc_emails?.trim()) {
+      const emails = formData.cc_emails.split(',').map(e => e.trim());
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emails.every(email => emailRegex.test(email))) {
+        newErrors.cc_emails = "Please enter valid CC email addresses";
+      }
+    }
+    if (formData.bcc_emails?.trim()) {
+      const emails = formData.bcc_emails.split(',').map(e => e.trim());
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emails.every(email => emailRegex.test(email))) {
+        newErrors.bcc_emails = "Please enter valid BCC email addresses";
+      }
+    }
+    
+    // Date validation
+    if (formData.issue_date?.trim()) {
+      const issueDate = new Date(formData.issue_date);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      if (issueDate > today) {
+        newErrors.issue_date = "Invoice date cannot be in the future";
+      }
+    }
+    
+    if (formData.due_date?.trim() && formData.issue_date?.trim()) {
+      const dueDate = new Date(formData.due_date);
+      const issueDate = new Date(formData.issue_date);
+      if (dueDate < issueDate) {
+        newErrors.due_date = "Due date must be after invoice date";
+      }
+    }
+    
+    // Numeric validation
+    if (formData.total_amount !== undefined && formData.total_amount < 0) {
+      newErrors.total_amount = "Total amount cannot be negative";
+    }
+    if (formData.tax_rate !== undefined && (formData.tax_rate < 0 || formData.tax_rate > 100)) {
+      newErrors.tax_rate = "Tax rate must be between 0 and 100";
+    }
+    if (formData.discount_percent !== undefined && (formData.discount_percent < 0 || formData.discount_percent > 100)) {
+      newErrors.discount_percent = "Discount percent must be between 0 and 100";
+    }
+    
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleFormDataChange = (newData: Partial<Invoice>) => {
+    setFormData(newData);
+    // Clear errors for fields that have been filled
+    const newErrors = { ...errors };
+    Object.keys(newData).forEach(key => {
+      if (newData[key as keyof Invoice] && newErrors[key]) {
+        delete newErrors[key];
+      }
+    });
+    setErrors(newErrors);
+  };
 
   const showSuccessToast = (message: string) => {
     setSuccessMessage(message);
@@ -182,6 +296,7 @@ export default function Invoices() {
   };
 
   const handleAddNew = () => {
+    console.log('Create invoice button clicked');
     dispatch(setCurrentInvoice(null));
     setFormData({
       invoice_number: generateInvoiceNumber(),
@@ -217,27 +332,21 @@ export default function Invoices() {
       memo_on_statement: '',
       tags: ''
     });
+    setErrors({});
+    console.log('Setting showForm to true');
     setShowForm(true);
   };
 
   const handleView = (invoice: Invoice) => {
     dispatch(setCurrentInvoice(invoice));
     setFormData(invoice);
+    setErrors({});
     setShowForm(true);
   };
 
   const handleSave = async () => {
-    // Basic validation
-    if (!formData.customer_name?.trim()) {
-      showSuccessToast('Please select a customer.');
-      return;
-    }
-    if (!formData.customer_email?.trim()) {
-      showSuccessToast('Please enter customer email.');
-      return;
-    }
-    if (!formData.due_date) {
-      showSuccessToast('Please enter due date.');
+    if (!validateForm()) {
+      showSuccessToast('Please fix the validation errors before saving.');
       return;
     }
 
@@ -256,6 +365,7 @@ export default function Invoices() {
         showSuccessToast('Invoice created successfully.');
       }
       setShowForm(false);
+      setErrors({});
     } catch (error) {
       console.error('Save error:', error);
       showSuccessToast('Error saving invoice.');
@@ -265,6 +375,7 @@ export default function Invoices() {
   const handleCancel = () => {
     setShowForm(false);
     dispatch(setCurrentInvoice(null));
+    setErrors({});
   };
 
   const handleSend = async (invoice: Invoice) => {
@@ -404,14 +515,14 @@ export default function Invoices() {
                   value={formData.customer_name || ''} 
                   onChange={(e) => {
                     const customer = customers.find(c => c.legal_company_name === e.target.value);
-                    setFormData({
+                    handleFormDataChange({
                       ...formData, 
                       customer_id: customer?._id, // Set customer_id instead of user_id
                       customer_name: e.target.value,
                       customer_email: customer?.email || ''
                     });
                   }}
-                  className="w-64 h-10 border border-slate-300 rounded-md px-3"
+                  className={`w-64 h-10 border border-slate-300 rounded-md px-3 ${errors.customer_name ? 'border-red-400' : ''}`}
                 >
                   <option value="">Select customer</option>
                   {customers.map(customer => (
@@ -420,6 +531,7 @@ export default function Invoices() {
                     </option>
                   ))}
                 </select>
+                {errors.customer_name && <p className="text-xs text-red-500 mt-1">{errors.customer_name}</p>}
                 <button className="text-blue-600 h-10 w-10 flex items-center justify-center">
                   <Plus className="w-4 h-4" />
                 </button>
@@ -427,10 +539,11 @@ export default function Invoices() {
               <input 
                 type="email"
                 placeholder="Enter customer email" 
-                className="w-full max-w-sm h-10 border border-slate-300 rounded-md px-3 focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                className={`w-full max-w-sm h-10 border border-slate-300 rounded-md px-3 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 ${errors.customer_email ? 'border-red-400' : ''}`}
                 value={formData.customer_email || ''}
-                onChange={(e) => setFormData({...formData, customer_email: e.target.value})}
+                onChange={(e) => handleFormDataChange({...formData, customer_email: e.target.value})}
               />
+              {errors.customer_email && <p className="text-xs text-red-500 mt-1">{errors.customer_email}</p>}
               <button 
                 onClick={() => setShowCcBcc(!showCcBcc)}
                 className="text-xs text-blue-600 hover:underline font-medium"
@@ -442,15 +555,17 @@ export default function Invoices() {
                   <input 
                     placeholder="Cc email" 
                     value={formData.cc_emails || ''}
-                    onChange={(e) => setFormData({...formData, cc_emails: e.target.value})}
-                    className="w-full max-w-sm h-10 border border-slate-300 rounded-md px-3 focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                    onChange={(e) => handleFormDataChange({...formData, cc_emails: e.target.value})}
+                    className={`w-full max-w-sm h-10 border border-slate-300 rounded-md px-3 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 ${errors.cc_emails ? 'border-red-400' : ''}`}
                   />
+                  {errors.cc_emails && <p className="text-xs text-red-500 mt-1">{errors.cc_emails}</p>}
                   <input 
                     placeholder="Bcc email" 
                     value={formData.bcc_emails || ''}
-                    onChange={(e) => setFormData({...formData, bcc_emails: e.target.value})}
-                    className="w-full max-w-sm h-10 border border-slate-300 rounded-md px-3 focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                    onChange={(e) => handleFormDataChange({...formData, bcc_emails: e.target.value})}
+                    className={`w-full max-w-sm h-10 border border-slate-300 rounded-md px-3 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 ${errors.bcc_emails ? 'border-red-400' : ''}`}
                   />
+                  {errors.bcc_emails && <p className="text-xs text-red-500 mt-1">{errors.bcc_emails}</p>}
                 </div>
               )}
             </div>
@@ -558,22 +673,24 @@ export default function Invoices() {
                 />
               </div>
               <div className="flex items-center gap-3">
-                <label className="text-xs font-semibold text-slate-700 w-32">Invoice date</label>
+                <label className="text-xs font-semibold text-slate-700 w-32">Invoice date <span className="text-red-500">*</span></label>
                 <input 
                   type="date" 
                   value={formData.issue_date || ''} 
-                  onChange={(e) => setFormData({...formData, issue_date: e.target.value})} 
-                  className="flex-1 h-10 border border-slate-300 rounded-md px-3 focus:border-blue-500 focus:ring-2 focus:ring-blue-200" 
+                  onChange={(e) => handleFormDataChange({...formData, issue_date: e.target.value})} 
+                  className={`flex-1 h-10 border border-slate-300 rounded-md px-3 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 ${errors.issue_date ? 'border-red-400' : ''}`}
                 />
+                {errors.issue_date && <p className="text-xs text-red-500 absolute mt-12">{errors.issue_date}</p>}
               </div>
               <div className="flex items-center gap-3">
-                <label className="text-xs font-semibold text-slate-700 w-32">Due date</label>
+                <label className="text-xs font-semibold text-slate-700 w-32">Due date <span className="text-red-500">*</span></label>
                 <input 
                   type="date" 
                   value={formData.due_date || ''} 
-                  onChange={(e) => setFormData({...formData, due_date: e.target.value})} 
-                  className="flex-1 h-10 border border-slate-300 rounded-md px-3 focus:border-blue-500 focus:ring-2 focus:ring-blue-200" 
+                  onChange={(e) => handleFormDataChange({...formData, due_date: e.target.value})} 
+                  className={`flex-1 h-10 border border-slate-300 rounded-md px-3 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 ${errors.due_date ? 'border-red-400' : ''}`}
                 />
+                {errors.due_date && <p className="text-xs text-red-500 absolute mt-12">{errors.due_date}</p>}
               </div>
               <div className="flex items-center gap-3">
                 <label className="text-xs font-semibold text-slate-700 w-32">Total Amount</label>
@@ -581,9 +698,10 @@ export default function Invoices() {
                   type="number" 
                   step="0.01"
                   value={formData.total_amount || 0} 
-                  onChange={(e) => setFormData({...formData, total_amount: parseFloat(e.target.value) || 0, balance_due: parseFloat(e.target.value) || 0})} 
-                  className="flex-1 h-10 border border-slate-300 rounded-md px-3 focus:border-blue-500 focus:ring-2 focus:ring-blue-200" 
+                  onChange={(e) => handleFormDataChange({...formData, total_amount: parseFloat(e.target.value) || 0, balance_due: parseFloat(e.target.value) || 0})} 
+                  className={`flex-1 h-10 border border-slate-300 rounded-md px-3 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 ${errors.total_amount ? 'border-red-400' : ''}`}
                 />
+                {errors.total_amount && <p className="text-xs text-red-500 absolute mt-12">{errors.total_amount}</p>}
               </div>
             </div>
           </div>
@@ -853,23 +971,12 @@ export default function Invoices() {
             >
               Cancel
             </button>
-            <button className="px-4 py-2 border border-slate-300 text-slate-700 rounded hover:bg-slate-50">
-              Clear
-            </button>
-            <button className="px-4 py-2 border border-slate-300 text-slate-700 rounded hover:bg-slate-50">
-              Print / Preview
-            </button>
             <button
               onClick={handleSave}
               className="px-6 py-2 bg-green-600 hover:bg-green-700 text-white rounded"
             >
               Save & Close
             </button>
-            {formData.invoice_status === 'draft' && (
-              <button className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded">
-                Send Invoice
-              </button>
-            )}
           </div>
         </div>
       </div>
@@ -935,10 +1042,20 @@ export default function Invoices() {
         {/* Filters and Actions */}
         <div className="mb-6 flex items-center justify-between">
           <div className="flex gap-3">
-            <select className="w-40 h-10 border border-slate-300 rounded-md px-3">
-              <option>Batch actions</option>
-              <option>Send invoices</option>
-              <option>Export selected</option>
+            <select 
+              className="w-40 h-10 border border-slate-300 rounded-md px-3"
+              onChange={(e) => {
+                if (e.target.value === 'export_selected') {
+                  handleExportSelected();
+                  e.target.value = 'batch_actions'; // Reset selection
+                }
+              }}
+            >
+              <option value="batch_actions">Batch actions</option>
+              <option value="send_invoices">Send invoices</option>
+              <option value="export_selected" disabled={isExporting}>
+                {isExporting ? 'Exporting...' : 'Export selected'}
+              </option>
             </select>
             
             <select className="w-48 h-10 border border-slate-300 rounded-md px-3">
@@ -958,6 +1075,13 @@ export default function Invoices() {
           </div>
 
           <div className="flex gap-2">
+            <button 
+              onClick={handleExportSelected}
+              disabled={isExporting}
+              className="h-10 px-6 bg-slate-900 hover:bg-slate-800 text-white rounded-md flex items-center gap-2"
+            >
+              {isExporting ? 'Exporting...' : 'Export'}
+            </button>
             <button onClick={handleAddNew} className="h-10 px-6 bg-green-600 hover:bg-green-700 text-white rounded-md flex items-center gap-2">
               <Plus className="w-4 h-4" />
               Create invoice

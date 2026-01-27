@@ -42,8 +42,13 @@ const paymentStatusConfig: Record<string, any> = {
     icon: Calendar,
     className: "bg-blue-100 text-blue-700",
   },
-  paid: {
-    label: "Paid",
+  sent: {
+    label: "Sent",
+    icon: CheckCircle,
+    className: "bg-green-100 text-green-700",
+  },
+  cleared: {
+    label: "Cleared",
     icon: CheckCircle,
     className: "bg-green-100 text-green-700",
   },
@@ -59,7 +64,9 @@ export default function PaymentsPage() {
   const [vendorPayments, setVendorPayments] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [isExporting, setIsExporting] = useState(false);
+
   const [formData, setFormData] = useState({
     vendor_name: '',
     payment_amount: '',
@@ -68,6 +75,8 @@ export default function PaymentsPage() {
     reference_number: '',
     notes: ''
   });
+
+  const hasFilters = statusFilter !== "all" || dateFilter !== "all";
 
   useEffect(() => {
     dispatch(fetchVendors());
@@ -127,6 +136,54 @@ export default function PaymentsPage() {
     return { pending, paid, total: pending + paid };
   }, [filteredExpenses]);
 
+  const validateForm = (): boolean => {
+    const newErrors: Record<string, string> = {};
+    
+    // Required fields
+    if (!formData.vendor_name?.trim()) {
+      newErrors.vendor_name = "Vendor is required";
+    }
+    if (!formData.payment_amount?.trim()) {
+      newErrors.payment_amount = "Payment amount is required";
+    }
+    if (!formData.payment_date?.trim()) {
+      newErrors.payment_date = "Payment date is required";
+    }
+    if (!formData.payment_method?.trim()) {
+      newErrors.payment_method = "Payment method is required";
+    }
+    
+    // Amount validation
+    if (formData.payment_amount?.trim()) {
+      const amount = parseFloat(formData.payment_amount);
+      if (isNaN(amount) || amount <= 0) {
+        newErrors.payment_amount = "Payment amount must be greater than 0";
+      }
+    }
+    
+    // Date validation
+    if (formData.payment_date?.trim()) {
+      const paymentDate = new Date(formData.payment_date);
+      const today = new Date();
+      today.setHours(23, 59, 59, 999); // Allow today's date
+      if (paymentDate > today) {
+        newErrors.payment_date = "Payment date cannot be in the future";
+      }
+    }
+    
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleFormDataChange = (field: string, value: string) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+    // Clear error for this field if it has been filled
+    if (value && errors[field]) {
+      const newErrors = { ...errors };
+      delete newErrors[field];
+      setErrors(newErrors);
+    }
+  };
   const handleMarkAsPaid = async (paymentId: string) => {
     try {
       const response = await fetch(`/api/vendor-payments/${paymentId}`, {
@@ -147,6 +204,12 @@ export default function PaymentsPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!validateForm()) {
+      toast.error('Please fix the validation errors before saving.');
+      return;
+    }
+
     try {
       const response = await fetch('/api/vendor-payments', {
         method: 'POST',
@@ -166,14 +229,48 @@ export default function PaymentsPage() {
           reference_number: '',
           notes: ''
         });
+        setErrors({});
         fetchVendorPayments();
+      } else {
+        toast.error(result.message || 'Failed to create vendor payment.');
       }
     } catch (error) {
       toast.error("Failed to create vendor payment.");
     }
   };
 
-  const hasFilters = statusFilter !== "all" || dateFilter !== "all";
+  const handleExportReport = async () => {
+    setIsExporting(true);
+    try {
+      const response = await fetch('/api/vendor-payments/export', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          filters: { statusFilter, dateFilter, searchTerm },
+          data: filteredExpenses
+        })
+      });
+      
+      if (response.ok) {
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `vendor-payments-${new Date().toISOString().split('T')[0]}.csv`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+        toast.success('Report exported successfully.');
+      } else {
+        toast.error('Failed to export report.');
+      }
+    } catch (error) {
+      toast.error('Error exporting report.');
+    } finally {
+      setIsExporting(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -203,9 +300,13 @@ export default function PaymentsPage() {
               Add Payment
             </Button>
 
-            <Button className="h-12 px-6 bg-slate-900 hover:bg-slate-800 gap-2">
+            <Button 
+              onClick={handleExportReport}
+              disabled={isExporting}
+              className="h-12 px-6 bg-slate-900 hover:bg-slate-800 gap-2"
+            >
               <Download className="w-5 h-5" />
-              Export Report
+              {isExporting ? 'Exporting...' : 'Export Report'}
             </Button>
           </div>
         </div>
@@ -239,7 +340,8 @@ export default function PaymentsPage() {
                   <SelectItem value="all">All Statuses</SelectItem>
                   <SelectItem value="pending">Pending</SelectItem>
                   <SelectItem value="scheduled">Scheduled</SelectItem>
-                  <SelectItem value="paid">Paid</SelectItem>
+                  <SelectItem value="sent">Sent</SelectItem>
+                  <SelectItem value="cleared">Cleared</SelectItem>
                 </SelectContent>
               </Select>
 
@@ -341,9 +443,9 @@ export default function PaymentsPage() {
               <h2 className="text-lg font-semibold mb-4">Record Vendor Payment</h2>
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Vendor</label>
-                  <Select value={formData.vendor_name} onValueChange={(value) => setFormData(prev => ({ ...prev, vendor_name: value }))}>
-                    <SelectTrigger>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Vendor <span className="text-red-500">*</span></label>
+                  <Select value={formData.vendor_name} onValueChange={(value) => handleFormDataChange('vendor_name', value)}>
+                    <SelectTrigger className={errors.vendor_name ? 'border-red-400' : ''}>
                       <SelectValue placeholder="Select vendor" />
                     </SelectTrigger>
                     <SelectContent>
@@ -354,36 +456,37 @@ export default function PaymentsPage() {
                       ))}
                     </SelectContent>
                   </Select>
+                  {errors.vendor_name && <p className="text-xs text-red-500 mt-1">{errors.vendor_name}</p>}
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Payment Amount</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Payment Amount <span className="text-red-500">*</span></label>
                   <input
                     type="number"
                     step="0.01"
                     value={formData.payment_amount}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData(prev => ({ ...prev, payment_amount: e.target.value }))}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleFormDataChange('payment_amount', e.target.value)}
                     placeholder="0.00"
-                    required
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className={`w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.payment_amount ? 'border-red-400' : ''}`}
                   />
+                  {errors.payment_amount && <p className="text-xs text-red-500 mt-1">{errors.payment_amount}</p>}
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Payment Date</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Payment Date <span className="text-red-500">*</span></label>
                   <input
                     type="date"
                     value={formData.payment_date}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData(prev => ({ ...prev, payment_date: e.target.value }))}
-                    required
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleFormDataChange('payment_date', e.target.value)}
+                    className={`w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.payment_date ? 'border-red-400' : ''}`}
                   />
+                  {errors.payment_date && <p className="text-xs text-red-500 mt-1">{errors.payment_date}</p>}
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Payment Method</label>
-                  <Select value={formData.payment_method} onValueChange={(value) => setFormData(prev => ({ ...prev, payment_method: value }))}>
-                    <SelectTrigger>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Payment Method <span className="text-red-500">*</span></label>
+                  <Select value={formData.payment_method} onValueChange={(value) => handleFormDataChange('payment_method', value)}>
+                    <SelectTrigger className={errors.payment_method ? 'border-red-400' : ''}>
                       <SelectValue placeholder="Select method" />
                     </SelectTrigger>
                     <SelectContent>
@@ -394,6 +497,7 @@ export default function PaymentsPage() {
                       <SelectItem value="cash">Cash</SelectItem>
                     </SelectContent>
                   </Select>
+                  {errors.payment_method && <p className="text-xs text-red-500 mt-1">{errors.payment_method}</p>}
                 </div>
 
                 <div>
@@ -418,7 +522,10 @@ export default function PaymentsPage() {
                 </div>
 
                 <div className="flex gap-3">
-                  <Button type="button" onClick={() => setIsDialogOpen(false)} className="flex-1 bg-gray-500 hover:bg-gray-600">
+                  <Button type="button" onClick={() => {
+                    setIsDialogOpen(false);
+                    setErrors({});
+                  }} className="flex-1 bg-gray-500 hover:bg-gray-600">
                     Cancel
                   </Button>
                   <Button type="submit" className="flex-1">

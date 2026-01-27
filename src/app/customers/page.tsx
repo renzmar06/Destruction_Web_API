@@ -181,6 +181,95 @@ function CustomersPageContent() {
     }
   }, [searchParams, customers, showDetailView]);
 
+  const validateForm = (): boolean => {
+    const newErrors: Record<string, string> = {};
+    
+    // Required fields
+    if (!formData.display_name?.trim()) {
+      newErrors.display_name = "Customer display name is required";
+    }
+    if (!formData.password?.trim() && !editingCustomer) {
+      newErrors.password = "Password is required for new customers";
+    }
+    
+    // Email validation
+    if (formData.email?.trim()) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(formData.email)) {
+        newErrors.email = "Please enter a valid email address";
+      }
+    }
+    
+    // CC/BCC email validation
+    if (formData.cc_email?.trim()) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(formData.cc_email)) {
+        newErrors.cc_email = "Please enter a valid CC email address";
+      }
+    }
+    if (formData.bcc_email?.trim()) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(formData.bcc_email)) {
+        newErrors.bcc_email = "Please enter a valid BCC email address";
+      }
+    }
+    
+    // Phone number validation (basic)
+    if (formData.phone?.trim()) {
+      const phoneRegex = /^[\d\s\-\(\)\+\.]+$/;
+      if (!phoneRegex.test(formData.phone)) {
+        newErrors.phone = "Please enter a valid phone number";
+      }
+    }
+    if (formData.mobile?.trim()) {
+      const phoneRegex = /^[\d\s\-\(\)\+\.]+$/;
+      if (!phoneRegex.test(formData.mobile)) {
+        newErrors.mobile = "Please enter a valid mobile number";
+      }
+    }
+    
+    // Website URL validation
+    if (formData.website?.trim()) {
+      try {
+        new URL(formData.website);
+      } catch {
+        newErrors.website = "Please enter a valid website URL";
+      }
+    }
+    
+    // Password strength validation for new customers
+    if (formData.password?.trim() && !editingCustomer) {
+      if (formData.password.length < 6) {
+        newErrors.password = "Password must be at least 6 characters long";
+      }
+    }
+    
+    // Credit limit validation
+    if (formData.credit_limit && formData.credit_limit < 0) {
+      newErrors.credit_limit = "Credit limit cannot be negative";
+    }
+    
+    // Opening balance validation
+    if (formData.opening_balance && isNaN(formData.opening_balance)) {
+      newErrors.opening_balance = "Opening balance must be a valid number";
+    }
+    
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleFormDataChange = (newData: Customer) => {
+    setFormData(newData);
+    // Clear errors for fields that have been filled
+    const newErrors = { ...errors };
+    Object.keys(newData).forEach(key => {
+      if (newData[key as keyof Customer] && newErrors[key]) {
+        delete newErrors[key];
+      }
+    });
+    setErrors(newErrors);
+  };
+
   /* ======================================================
      ACTIONS
   ====================================================== */
@@ -201,17 +290,18 @@ function CustomersPageContent() {
     setFormData(customer);
     setShowForm(true);
     setShowDetailView(false);
+    setErrors({});
   };
 
   const handleSave = async (): Promise<void> => {
+    if (!validateForm()) {
+      setSuccessMessage("Please fix the validation errors before saving.");
+      setShowSuccess(true);
+      setTimeout(() => setShowSuccess(false), 3000);
+      return;
+    }
+
     try {
-      
-      // Validate required fields
-      if (!formData.password && !editingCustomer) {
-        alert('Password is required for new customers');
-        return;
-      }
-      
       if (editingCustomer?._id) {
         await dispatch(updateCustomer({ id: editingCustomer._id, customer: formData })).unwrap();
         setSuccessMessage("Customer updated successfully.");
@@ -223,9 +313,12 @@ function CustomersPageContent() {
       setShowSuccess(true);
       setTimeout(() => setShowSuccess(false), 3000);
       setShowForm(false);
+      setErrors({});
     } catch (error) {
       console.error('Failed to save customer:', error);
-      alert('Failed to save customer. Please check if email already exists.');
+      setSuccessMessage('Failed to save customer. Please check if email already exists.');
+      setShowSuccess(true);
+      setTimeout(() => setShowSuccess(false), 3000);
     }
   };
 
@@ -312,12 +405,12 @@ function CustomersPageContent() {
                 </button>
               </div>
 
-              <NameContactSection data={formData} onChange={setFormData} errors={errors} />
-              <CommunicationPermissionsSection data={formData} onChange={setFormData} />
-              <AddressesSection data={formData} onChange={setFormData} />
-              <PaymentsSection data={formData} onChange={setFormData} />
-              <AdditionalInfoSection data={formData} onChange={setFormData} />
-              <NotesAttachmentsSection data={formData} onChange={setFormData} />
+              <NameContactSection data={formData} onChange={handleFormDataChange} errors={errors} />
+              <CommunicationPermissionsSection data={formData} onChange={handleFormDataChange} />
+              <AddressesSection data={formData} onChange={handleFormDataChange} />
+              <PaymentsSection data={formData} onChange={handleFormDataChange} />
+              <AdditionalInfoSection data={formData} onChange={handleFormDataChange} />
+              <NotesAttachmentsSection data={formData} onChange={handleFormDataChange} />
               <CustomFieldsSection />
 
               {/* Fixed Footer with Buttons */}

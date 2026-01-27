@@ -45,11 +45,11 @@ export default function ServiceFormModal({
 
     // Validate file type and size
     if (!file.type.startsWith('image/')) {
-      alert('Please select an image file');
+      onShowToast('Please select an image file', 'error');
       return;
     }
     if (file.size > 5 * 1024 * 1024) { // 5MB limit
-      alert('Image size must be less than 5MB');
+      onShowToast('Image size must be less than 5MB', 'error');
       return;
     }
 
@@ -140,8 +140,12 @@ export default function ServiceFormModal({
                     id="sku"
                     value={formData.sku}
                     onChange={(e) => handleChange('sku', e.target.value)}
-                    className="h-11 text-base border-slate-300"
+                    className={`h-11 text-base ${errors.sku ? 'border-red-400' : 'border-slate-300'}`}
+                    maxLength={50}
                   />
+                  {errors.sku && (
+                    <p className="text-xs text-red-500">{errors.sku}</p>
+                  )}
                 </div>
 
                 <div className="space-y-2">
@@ -272,9 +276,12 @@ export default function ServiceFormModal({
                         ]}
                         placeholder="Select account"
                         label="income account"
-                        className="h-11 text-base border-slate-300"
+                        className={`h-11 text-base ${errors.income_account ? 'border-red-400' : 'border-slate-300'}`}
                         required
                       />
+                      {errors.income_account && (
+                        <p className="text-xs text-red-500">{errors.income_account}</p>
+                      )}
                     </div>
                   </div>
 

@@ -14,6 +14,7 @@ import AffidavitContextHeader from "@/components/affidavits/AffidavitContextHead
 import AffidavitDetailsSection from "@/components/affidavits/AffidavitDetailsSection";
 import MediaReferencesSection from "@/components/affidavits/MediaReferencesSection";
 import AuthorizationSection from "@/components/affidavits/AuthorizationSection";
+import RevokeDocumentModal from "@/components/affidavits/RevokeDocumentModal";
 
 type MediaItem = {
   id: string;
@@ -57,6 +58,20 @@ export default function AffidavitsPage() {
 
   const [showSuccess, setShowSuccess] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
+  const [showRevokeModal, setShowRevokeModal] = useState(false);
+  const [revokeAffidavit, setRevokeAffidavit] = useState<Affidavit | null>(null);
+
+  const handleFormDataChange = (newData: Affidavit) => {
+    setFormData(newData);
+    // Clear errors for fields that have been filled
+    const newErrors = { ...errors };
+    Object.keys(newData).forEach(key => {
+      if (newData[key as keyof Affidavit] && newErrors[key]) {
+        delete newErrors[key];
+      }
+    });
+    setErrors(newErrors);
+  };
 
   useEffect(() => {
     dispatch(fetchAffidavits());
@@ -71,8 +86,28 @@ export default function AffidavitsPage() {
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
+    
+    // Required text fields
     if (!formData.service_provider_name?.trim()) {
       newErrors.service_provider_name = "Service provider name is required";
+    }
+    if (!formData.service_provider_ein?.trim()) {
+      newErrors.service_provider_ein = "Service provider EIN is required";
+    }
+    if (!formData.service_provider_address?.trim()) {
+      newErrors.service_provider_address = "Service provider address is required";
+    }
+    if (!formData.customer_name?.trim()) {
+      newErrors.customer_name = "Customer name is required";
+    }
+    if (!formData.job_location?.trim()) {
+      newErrors.job_location = "Job location is required";
+    }
+    if (!formData.job_completion_date?.trim()) {
+      newErrors.job_completion_date = "Job completion date is required";
+    }
+    if (!formData.destruction_method?.trim()) {
+      newErrors.destruction_method = "Destruction method is required";
     }
     if (!formData.description_of_materials?.trim()) {
       newErrors.description_of_materials = "Description of materials is required";
@@ -80,6 +115,24 @@ export default function AffidavitsPage() {
     if (!formData.description_of_process?.trim()) {
       newErrors.description_of_process = "Description of process is required";
     }
+    
+    // EIN format validation (XX-XXXXXXX)
+    if (formData.service_provider_ein?.trim()) {
+      const einPattern = /^\d{2}-\d{7}$/;
+      if (!einPattern.test(formData.service_provider_ein)) {
+        newErrors.service_provider_ein = "EIN must be in format XX-XXXXXXX";
+      }
+    }
+    
+    // Date validation
+    if (formData.job_completion_date?.trim()) {
+      const completionDate = new Date(formData.job_completion_date);
+      const today = new Date();
+      if (completionDate > today) {
+        newErrors.job_completion_date = "Completion date cannot be in the future";
+      }
+    }
+    
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -190,8 +243,6 @@ export default function AffidavitsPage() {
   };
 
   const handleIssue = async (affidavit: Affidavit) => {
-    if (!confirm("Issue this affidavit? This will generate the certificate.")) return;
-
     try {
       await dispatch(updateAffidavit({
         id: affidavit._id || affidavit.id!,
@@ -200,26 +251,16 @@ export default function AffidavitsPage() {
           date_issued: new Date().toISOString()
         }
       })).unwrap();
-      showToast("Affidavit issued successfully.");
+      showToast("Affidavit issued successfully and certificate generated.");
     } catch (error: any) {
       const errorMessage = error?.message || 'Unknown error occurred';
-      alert('Failed to issue affidavit: ' + errorMessage);
+      showToast('Failed to issue affidavit: ' + errorMessage);
     }
   };
 
   const handleRevoke = async (affidavit: Affidavit) => {
-    if (!confirm("Revoke this affidavit? This action cannot be undone.")) return;
-
-    try {
-      await dispatch(updateAffidavit({
-        id: affidavit._id || affidavit.id!,
-        data: { affidavit_status: "revoked" }
-      })).unwrap();
-      showToast("Affidavit revoked successfully.");
-    } catch (error: any) {
-      const errorMessage = error?.message || 'Unknown error occurred';
-      alert('Failed to revoke affidavit: ' + errorMessage);
-    }
+    setRevokeAffidavit(affidavit);
+    setShowRevokeModal(true);
   };
 
   const handleLock = async (affidavit: Affidavit) => {
@@ -385,8 +426,9 @@ export default function AffidavitsPage() {
                 <div className="p-6">
                   <AffidavitDetailsSection
                     data={formData}
-                    onChange={setFormData}
+                    onChange={handleFormDataChange}
                     isReadOnly={isReadOnly}
+                    errors={errors}
                   />
                 </div>
               </div>
@@ -443,6 +485,18 @@ export default function AffidavitsPage() {
             </motion.div>
           )}
         </AnimatePresence>
+
+        {/* Revoke Modal */}
+        {showRevokeModal && revokeAffidavit && (
+          <RevokeDocumentModal
+            affidavit={revokeAffidavit}
+            onClose={() => {
+              setShowRevokeModal(false);
+              setRevokeAffidavit(null);
+            }}
+            onSuccess={showToast}
+          />
+        )}
 
         {/* Toast */}
         <AnimatePresence>

@@ -25,7 +25,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, message: 'Verification record not found' }, { status: 404 });
     }
 
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://destruction-web-api.vercel.app/';
     const verifyUrl = `${baseUrl}/verify-document?token=${verification.verification_token}&doc=${document_id}`;
 
     // Create document view URL instead of attachment

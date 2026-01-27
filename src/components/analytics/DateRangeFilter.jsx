@@ -73,8 +73,8 @@ export default function DateRangeFilter({ dateRange, onDateRangeChange, customer
             <SelectContent>
               <SelectItem value="all">All Customers</SelectItem>
               {customers.map(customer => (
-                <SelectItem key={customer.id} value={customer.id}>
-                  {customer.legal_company_name}
+                <SelectItem key={customer.id || customer._id} value={customer.id || customer._id}>
+                  {customer.legal_company_name || customer.company_name}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -90,8 +90,8 @@ export default function DateRangeFilter({ dateRange, onDateRangeChange, customer
             <SelectContent>
               <SelectItem value="all">All Jobs</SelectItem>
               {jobs.map(job => (
-                <SelectItem key={job.id} value={job.id}>
-                  {job.job_id} - {job.job_name}
+                <SelectItem key={job.id || job._id} value={job.id || job._id}>
+                  Job #{job.id || job._id}
                 </SelectItem>
               ))}
             </SelectContent>
