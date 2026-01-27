@@ -574,7 +574,6 @@ export default function ServiceRequestsPage() {
           </div>
         )}
       </div>
-      <Toaster />
     </div>
   );
 }
