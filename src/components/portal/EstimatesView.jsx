@@ -10,7 +10,12 @@ const statusConfig = {
   draft: { label: 'Draft', className: 'bg-slate-100 text-slate-700' },
   sent: { label: 'Pending Review', className: 'bg-blue-100 text-blue-700' },
   accepted: { label: 'Accepted', className: 'bg-green-100 text-green-700' },
-  expired: { label: 'Expired', className: 'bg-red-100 text-red-700' }
+  expired: { label: 'Expired', className: 'bg-red-100 text-red-700' },
+  cancelled: { label: 'Cancelled', className: 'bg-gray-100 text-gray-700' }
+};
+
+const getStatusConfig = (status) => {
+  return statusConfig[status] || { label: 'Unknown', className: 'bg-gray-100 text-gray-700' };
 };
 
 export default function EstimatesView({ customerId, selectedEstimate, onBack }) {
@@ -48,8 +53,8 @@ export default function EstimatesView({ customerId, selectedEstimate, onBack }) 
                 <h3 className="text-2xl font-bold text-slate-900">{selectedEstimate.estimate_number}</h3>
                 <p className="text-slate-600 mt-1">Valid until {format(new Date(selectedEstimate.valid_until_date), 'MMMM d, yyyy')}</p>
               </div>
-              <Badge className={statusConfig[selectedEstimate.estimate_status].className}>
-                {statusConfig[selectedEstimate.estimate_status].label}
+              <Badge className={getStatusConfig(selectedEstimate.estimate_status).className}>
+                {getStatusConfig(selectedEstimate.estimate_status).label}
               </Badge>
             </div>
           </CardHeader>
@@ -118,12 +123,11 @@ export default function EstimatesView({ customerId, selectedEstimate, onBack }) 
               <div className="flex justify-end">
                 <Button
                   onClick={() => handleAccept(selectedEstimate)}
-                  disabled={acceptMutation.isPending}
                   className="bg-green-600 hover:bg-green-700 gap-2"
                   size="lg"
                 >
                   <CheckCircle className="w-5 h-5" />
-                  {acceptMutation.isPending ? 'Accepting...' : 'Accept Estimate'}
+                  Accept Estimate
                 </Button>
               </div>
             )}
@@ -157,8 +161,8 @@ export default function EstimatesView({ customerId, selectedEstimate, onBack }) 
                     <div className="flex-1">
                       <div className="flex items-center gap-3 mb-2">
                         <h3 className="text-lg font-bold text-slate-900">{estimate.estimate_number}</h3>
-                        <Badge className={statusConfig[estimate.estimate_status].className}>
-                          {statusConfig[estimate.estimate_status].label}
+                        <Badge className={getStatusConfig(estimate.estimate_status).className}>
+                          {getStatusConfig(estimate.estimate_status).label}
                         </Badge>
                       </div>
                       <div className="flex items-center gap-4 text-sm text-slate-600">
