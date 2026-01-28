@@ -192,9 +192,9 @@ export default function Sidebar() {
       {/* Settings (Bottom) */}
       <div className="border-t border-slate-800 p-2">
         <Link
-          href="/settings"
+          href="/settings/company"
           className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all ${
-            isActive('/settings')
+            isActive('/settings/company')
               ? 'bg-blue-600 text-white'
               : 'text-slate-300 hover:bg-slate-800 hover:text-white'
           } ${collapsed ? 'justify-center' : ''}`}

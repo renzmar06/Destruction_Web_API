@@ -6,7 +6,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { AppDispatch, RootState } from '@/redux/store';
 import { fetchCompanyInfo, saveCompanyInfo } from '@/redux/slices/companyInfoSlice';
 import { motion, AnimatePresence } from "framer-motion";
-import { Pencil, Building2, CheckCircle } from "lucide-react";
+import { Pencil, Building2, CheckCircle,HelpCircle,X, TrendingUp,CreditCard, Landmark, FileText, ShoppingCart, Clock, SettingsIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -84,6 +84,7 @@ export default function CompanySettingsPage() {
   const [editFormData, setEditFormData] = useState<Partial<CompanyFormData>>({});
   const [errors, setErrors] = useState<Partial<Record<keyof CompanyFormData, string>>>({});
   const [showSuccess, setShowSuccess] = useState(false);
+  const [activeSection, setActiveSection] = useState('company');
 
   useEffect(() => {
     dispatch(fetchCompanyInfo());
@@ -114,6 +115,17 @@ export default function CompanySettingsPage() {
     }
   }, [companyInfo]);
 
+  const navItems = [
+      { id: 'company', label: 'Company', icon: Building2 },
+      { id: 'usage', label: 'Usage', icon: TrendingUp },
+      { id: 'payments', label: 'Payments', icon: CreditCard },
+      { id: 'lending', label: 'Lending', icon: Landmark },
+      { id: 'accounting', label: 'Accounting', icon: FileText },
+      { id: 'sales', label: 'Sales', icon: ShoppingCart },
+      { id: 'expenses', label: 'Expenses', icon: CreditCard },
+      { id: 'time', label: 'Time', icon: Clock },
+      { id: 'advanced', label: 'Advanced', icon: SettingsIcon }
+    ];
   // ── Open edit dialog for a section ────────────────────────
   const handleEditSection = (
     section: EditingSection,
@@ -215,19 +227,45 @@ export default function CompanySettingsPage() {
   const hasPendingChanges = Object.keys(pendingChanges).length > 0;
 
   return (
-    <div className="min-h-screen bg-slate-50/70">
-      <div className="mx-auto max-w-7xl px-6 py-12">
+    <div className="flex min-h-screen bg-slate-50 mt-5">
+         <div className="w-64 bg-slate-100 border-r border-slate-200 flex-shrink-0">
+                <div className="p-6">
+                  <div className="flex items-center justify-between mb-6">
+                    <h2 className="text-lg font-semibold text-slate-900">Settings</h2>
+                    <div className="flex gap-2">
+                      <button className="p-1 hover:bg-slate-200 rounded">
+                        <HelpCircle className="w-5 h-5 text-slate-600" />
+                      </button>
+                      <button className="p-1 hover:bg-slate-200 rounded">
+                        <X className="w-5 h-5 text-slate-600" />
+                      </button>
+                    </div>
+                  </div>
+                  <nav className="space-y-1">
+                    {navItems.map((item) => {
+                      const Icon = item.icon;
+                      return (
+                        <button
+                          key={item.id}
+                          onClick={() => setActiveSection(item.id)}
+                          className={`w-full flex items-center gap-3 px-4 py-2 rounded-lg text-left transition-colors ${
+                            activeSection === item.id
+                              ? 'bg-white text-slate-900 font-medium shadow-sm'
+                              : 'text-slate-600 hover:bg-slate-200'
+                          }`}
+                        >
+                          <Icon className="w-4 h-4" />
+                          <span className="text-sm">{item.label}</span>
+                        </button>
+                      );
+                    })}
+                  </nav>
+                </div>
+              </div>
+      
+      <div className="flex-1 overflow-y-auto">
         {/* Header */}
-        <div className="mb-10">
-          <h1 className="text-3xl font-bold text-slate-900">
-            Company Settings
-          </h1>
-          <p className="mt-2 text-slate-600">
-            Manage your business information that appears on invoices,
-            estimates, and more.
-          </p>
-        </div>
-
+      
         {/* Logo Section */}
         <div className="mb-12 flex flex-col items-center">
           <div className="group relative">
