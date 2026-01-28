@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { useRouter } from 'next/navigation';
 import {
   Building2,
   CreditCard,
@@ -39,6 +40,19 @@ interface SubSidebarProps {
 }
 
 export default function SubSidebar({ activeSection, onSectionChange }: SubSidebarProps) {
+  const router = useRouter();
+
+  const handleSectionClick = (sectionId: string) => {
+    onSectionChange(sectionId);
+    
+    // Navigate to specific routes
+    if (sectionId === 'company') {
+      router.push('/settings/company');
+    } else if (sectionId === 'sales') {
+      router.push('/settings/sales');
+    }
+    // Add more routes as needed
+  };
   return (
     <aside className="w-72 border-r bg-white/70 backdrop-blur-sm flex-shrink-0">
       <div className="p-6">
@@ -61,7 +75,7 @@ export default function SubSidebar({ activeSection, onSectionChange }: SubSideba
             return (
               <button
                 key={item.id}
-                onClick={() => onSectionChange(item.id)}
+                onClick={() => handleSectionClick(item.id)}
                 className={`
                   group flex w-full items-center gap-3 rounded-lg px-4 py-2.5 text-sm font-medium transition-all
                   ${

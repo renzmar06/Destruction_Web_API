@@ -6,7 +6,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { AppDispatch, RootState } from '@/redux/store';
 import { fetchCompanyInfo, saveCompanyInfo } from '@/redux/slices/companyInfoSlice';
 import { motion, AnimatePresence } from "framer-motion";
-import { Pencil, Building2, CheckCircle } from "lucide-react";
+import { Pencil, Building2, CheckCircle,HelpCircle,X, TrendingUp,CreditCard, Landmark, FileText, ShoppingCart, Clock, SettingsIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -23,6 +23,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+
+import SubSidebar from '@/app/settings/SubSidebar';
 
 // ────────────────────────────────────────────────
 // Types
@@ -85,6 +87,7 @@ export default function CompanySettingsPage() {
   const [errors, setErrors] = useState<Partial<Record<keyof CompanyFormData, string>>>({});
   const [showSuccess, setShowSuccess] = useState(false);
 
+
   useEffect(() => {
     dispatch(fetchCompanyInfo());
   }, [dispatch]);
@@ -113,6 +116,7 @@ export default function CompanySettingsPage() {
       setPendingChanges({});
     }
   }, [companyInfo]);
+
 
   // ── Open edit dialog for a section ────────────────────────
   const handleEditSection = (
@@ -215,45 +219,33 @@ export default function CompanySettingsPage() {
   const hasPendingChanges = Object.keys(pendingChanges).length > 0;
 
   return (
-    <div className="min-h-screen bg-slate-50/70">
-      <div className="mx-auto max-w-7xl px-6 py-12">
-        {/* Header */}
-        <div className="mb-10">
-          <h1 className="text-3xl font-bold text-slate-900">
-            Company Settings
-          </h1>
-          <p className="mt-2 text-slate-600">
-            Manage your business information that appears on invoices,
-            estimates, and more.
-          </p>
-        </div>
+    <>
+      {/* Logo Section */}
+      <div className="mb-12 flex flex-col items-center">
+        <div className="group relative">
+          {formData.company_logo_url ? (
+            <img
+              src={formData.company_logo_url}
+              alt="Company Logo"
+              className="h-28 w-28 rounded-xl object-contain ring-1 ring-slate-200"
+            />
+          ) : (
+            <div className="flex h-28 w-28 items-center justify-center rounded-xl bg-slate-100 text-slate-400 ring-1 ring-slate-200">
+              <Building2 size={48} />
+            </div>
+          )}
 
-        {/* Logo Section */}
-        <div className="mb-12 flex flex-col items-center">
-          <div className="group relative">
-            {formData.company_logo_url ? (
-              <img
-                src={formData.company_logo_url}
-                alt="Company Logo"
-                className="h-28 w-28 rounded-xl object-contain ring-1 ring-slate-200"
-              />
-            ) : (
-              <div className="flex h-28 w-28 items-center justify-center rounded-xl bg-slate-100 text-slate-400 ring-1 ring-slate-200">
-                <Building2 size={48} />
-              </div>
-            )}
-
-            <button
-              onClick={() => handleEditSection("logo", ["company_logo_url"])}
-              className="absolute -bottom-2 -right-2 rounded-full bg-white p-2 shadow-md ring-1 ring-slate-200 transition hover:bg-slate-50"
-            >
-              <Pencil size={16} className="text-slate-600" />
-            </button>
-          </div>
-          <p className="mt-3 text-sm text-slate-500">
-            Click pencil to change logo
-          </p>
+          <button
+            onClick={() => handleEditSection("logo", ["company_logo_url"])}
+            className="absolute -bottom-2 -right-2 rounded-full bg-white p-2 shadow-md ring-1 ring-slate-200 transition hover:bg-slate-50"
+          >
+            <Pencil size={16} className="text-slate-600" />
+          </button>
         </div>
+        <p className="mt-3 text-sm text-slate-500">
+          Click pencil to change logo
+        </p>
+      </div>
 
         {/* COMPANY INFO CARD */}
         <div className="mb-8 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
@@ -744,7 +736,6 @@ export default function CompanySettingsPage() {
             {loading ? "Saving..." : hasPendingChanges ? "Save & Done" : "Done"}
           </Button>
         </div>
-      </div>
-    </div>
+    </>
   );
 }
