@@ -52,8 +52,9 @@ export default function SubSidebar({ activeSection, onSectionChange }: SubSideba
       router.push('/settings/sales');
     } else if (sectionId === 'expenses') {
       router.push('/settings/expenses');
+    } else {
+      router.push(`/settings/${sectionId}`);
     }
-    // Add more routes as needed
   };
   return (
     <aside className="w-72 border-r bg-white/70 backdrop-blur-sm flex-shrink-0">
