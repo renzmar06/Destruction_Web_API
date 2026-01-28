@@ -50,6 +50,8 @@ export default function SubSidebar({ activeSection, onSectionChange }: SubSideba
       router.push('/settings/company');
     } else if (sectionId === 'sales') {
       router.push('/settings/sales');
+    } else if (sectionId === 'expenses') {
+      router.push('/settings/expenses');
     }
     // Add more routes as needed
   };

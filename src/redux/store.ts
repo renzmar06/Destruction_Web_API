@@ -12,6 +12,7 @@ import expensesReducer from './slices/expensesSlice';
 import messagesReducer from './slices/messagesSlice';
 import companyInfoReducer from './slices/companyInfoSlice';
 import salesSettingsReducer from './slices/salesSettingsSlice';
+import expenseSettingsReducer from './slices/expenseSettingsSlice';
 
 export const store = configureStore({
   reducer: {
@@ -28,6 +29,7 @@ export const store = configureStore({
     messages: messagesReducer,
     companyInfo: companyInfoReducer,
     salesSettings: salesSettingsReducer,
+    expenseSettings: expenseSettingsReducer,
   },
 });
 
