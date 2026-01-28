@@ -86,6 +86,7 @@ export default function CompanySettingsPage() {
   const [editFormData, setEditFormData] = useState<Partial<CompanyFormData>>({});
   const [errors, setErrors] = useState<Partial<Record<keyof CompanyFormData, string>>>({});
   const [showSuccess, setShowSuccess] = useState(false);
+  const [uploading, setUploading] = useState(false);
 
 
   useEffect(() => {
@@ -196,6 +197,34 @@ export default function CompanySettingsPage() {
     } catch (error) {
       console.error('Error saving company settings:', error);
       // Optionally: show error message to user
+    }
+  };
+
+  const handleLogoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const response = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData,
+      });
+
+      const result = await response.json();
+      if (result.success) {
+        setEditFormData({
+          ...editFormData,
+          company_logo_url: result.url,
+        });
+      }
+    } catch (error) {
+      console.error('Upload failed:', error);
+    } finally {
+      setUploading(false);
     }
   };
 
@@ -454,18 +483,28 @@ export default function CompanySettingsPage() {
 
             <div className="mt-6 space-y-5">
               {editingSection === "logo" && (
-                <div className="space-y-2">
-                  <Label>Company Logo URL</Label>
-                  <Input
-                    value={editFormData.company_logo_url || ""}
-                    onChange={(e) =>
-                      setEditFormData({
-                        ...editFormData,
-                        company_logo_url: e.target.value,
-                      })
-                    }
-                    placeholder="https://..."
-                  />
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label>Upload Logo</Label>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleLogoUpload}
+                      disabled={uploading}
+                      className="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                    />
+                    {uploading && <p className="text-sm text-blue-600">Uploading...</p>}
+                  </div>
+                  {editFormData.company_logo_url && (
+                    <div className="space-y-2">
+                      <Label>Preview</Label>
+                      <img
+                        src={editFormData.company_logo_url}
+                        alt="Logo preview"
+                        className="h-20 w-20 object-contain border rounded"
+                      />
+                    </div>
+                  )}
                   <p className="text-xs text-slate-500">
                     Use a square or wide logo with transparent background for best results.
                   </p>

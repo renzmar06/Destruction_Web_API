@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
 import { getUserFromRequest } from "@/lib/auth";
 import CompanyInfo from "@/models/CompanyInfo";
+import User from "@/models/User";
 
 export async function GET(request: NextRequest) {
   try {
@@ -71,6 +72,13 @@ export async function POST(request: NextRequest) {
       companyData,
       { upsert: true, new: true },
     );
+
+    // Also update the User model's logo_url field
+    if (data.company_logo_url) {
+      await User.findByIdAndUpdate(userId, {
+        logo_url: data.company_logo_url
+      });
+    }
 
     return NextResponse.json({
       success: true,
