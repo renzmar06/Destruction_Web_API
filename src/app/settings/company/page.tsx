@@ -24,6 +24,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
+import SubSidebar from '@/app/settings/SubSidebar';
+
 // ────────────────────────────────────────────────
 // Types
 // ────────────────────────────────────────────────
@@ -84,7 +86,7 @@ export default function CompanySettingsPage() {
   const [editFormData, setEditFormData] = useState<Partial<CompanyFormData>>({});
   const [errors, setErrors] = useState<Partial<Record<keyof CompanyFormData, string>>>({});
   const [showSuccess, setShowSuccess] = useState(false);
-  const [activeSection, setActiveSection] = useState('company');
+
 
   useEffect(() => {
     dispatch(fetchCompanyInfo());
@@ -115,17 +117,7 @@ export default function CompanySettingsPage() {
     }
   }, [companyInfo]);
 
-  const navItems = [
-      { id: 'company', label: 'Company', icon: Building2 },
-      { id: 'usage', label: 'Usage', icon: TrendingUp },
-      { id: 'payments', label: 'Payments', icon: CreditCard },
-      { id: 'lending', label: 'Lending', icon: Landmark },
-      { id: 'accounting', label: 'Accounting', icon: FileText },
-      { id: 'sales', label: 'Sales', icon: ShoppingCart },
-      { id: 'expenses', label: 'Expenses', icon: CreditCard },
-      { id: 'time', label: 'Time', icon: Clock },
-      { id: 'advanced', label: 'Advanced', icon: SettingsIcon }
-    ];
+
   // ── Open edit dialog for a section ────────────────────────
   const handleEditSection = (
     section: EditingSection,
@@ -227,71 +219,33 @@ export default function CompanySettingsPage() {
   const hasPendingChanges = Object.keys(pendingChanges).length > 0;
 
   return (
-    <div className="flex min-h-screen bg-slate-50 mt-5">
-         <div className="w-64 bg-slate-100 border-r border-slate-200 flex-shrink-0">
-                <div className="p-6">
-                  <div className="flex items-center justify-between mb-6">
-                    <h2 className="text-lg font-semibold text-slate-900">Settings</h2>
-                    <div className="flex gap-2">
-                      <button className="p-1 hover:bg-slate-200 rounded">
-                        <HelpCircle className="w-5 h-5 text-slate-600" />
-                      </button>
-                      <button className="p-1 hover:bg-slate-200 rounded">
-                        <X className="w-5 h-5 text-slate-600" />
-                      </button>
-                    </div>
-                  </div>
-                  <nav className="space-y-1">
-                    {navItems.map((item) => {
-                      const Icon = item.icon;
-                      return (
-                        <button
-                          key={item.id}
-                          onClick={() => setActiveSection(item.id)}
-                          className={`w-full flex items-center gap-3 px-4 py-2 rounded-lg text-left transition-colors ${
-                            activeSection === item.id
-                              ? 'bg-white text-slate-900 font-medium shadow-sm'
-                              : 'text-slate-600 hover:bg-slate-200'
-                          }`}
-                        >
-                          <Icon className="w-4 h-4" />
-                          <span className="text-sm">{item.label}</span>
-                        </button>
-                      );
-                    })}
-                  </nav>
-                </div>
-              </div>
-      
-      <div className="flex-1 overflow-y-auto">
-        {/* Header */}
-      
-        {/* Logo Section */}
-        <div className="mb-12 flex flex-col items-center">
-          <div className="group relative">
-            {formData.company_logo_url ? (
-              <img
-                src={formData.company_logo_url}
-                alt="Company Logo"
-                className="h-28 w-28 rounded-xl object-contain ring-1 ring-slate-200"
-              />
-            ) : (
-              <div className="flex h-28 w-28 items-center justify-center rounded-xl bg-slate-100 text-slate-400 ring-1 ring-slate-200">
-                <Building2 size={48} />
-              </div>
-            )}
+    <>
+      {/* Logo Section */}
+      <div className="mb-12 flex flex-col items-center">
+        <div className="group relative">
+          {formData.company_logo_url ? (
+            <img
+              src={formData.company_logo_url}
+              alt="Company Logo"
+              className="h-28 w-28 rounded-xl object-contain ring-1 ring-slate-200"
+            />
+          ) : (
+            <div className="flex h-28 w-28 items-center justify-center rounded-xl bg-slate-100 text-slate-400 ring-1 ring-slate-200">
+              <Building2 size={48} />
+            </div>
+          )}
 
-            <button
-              onClick={() => handleEditSection("logo", ["company_logo_url"])}
-              className="absolute -bottom-2 -right-2 rounded-full bg-white p-2 shadow-md ring-1 ring-slate-200 transition hover:bg-slate-50"
-            >
-              <Pencil size={16} className="text-slate-600" />
-            </button>
-          </div>
-          <p className="mt-3 text-sm text-slate-500">
-            Click pencil to change logo
-          </p>
+          <button
+            onClick={() => handleEditSection("logo", ["company_logo_url"])}
+            className="absolute -bottom-2 -right-2 rounded-full bg-white p-2 shadow-md ring-1 ring-slate-200 transition hover:bg-slate-50"
+          >
+            <Pencil size={16} className="text-slate-600" />
+          </button>
         </div>
+        <p className="mt-3 text-sm text-slate-500">
+          Click pencil to change logo
+        </p>
+      </div>
 
         {/* COMPANY INFO CARD */}
         <div className="mb-8 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
@@ -782,7 +736,6 @@ export default function CompanySettingsPage() {
             {loading ? "Saving..." : hasPendingChanges ? "Save & Done" : "Done"}
           </Button>
         </div>
-      </div>
-    </div>
+    </>
   );
 }

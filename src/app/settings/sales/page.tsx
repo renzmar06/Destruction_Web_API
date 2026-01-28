@@ -5,7 +5,7 @@ import React, { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { AppDispatch, RootState } from '@/redux/store';
 import { fetchSalesSettings, saveSalesSettings } from '@/redux/slices/salesSettingsSlice';
-import {CheckCircle} from 'lucide-react';
+import {CheckCircle, Building2, TrendingUp, CreditCard, Landmark, FileText, ShoppingCart, Clock, Settings as SettingsIcon} from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
@@ -20,6 +20,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import SubSidebar from '@/app/settings/SubSidebar';
 
 type SalesSettings = {
   preferred_invoice_terms: string;
@@ -61,6 +62,9 @@ type SalesSettings = {
 export default function SalesSettingsPage() {
   const dispatch = useDispatch<AppDispatch>();
   const { salesSettings, loading } = useSelector((state: RootState) => state.salesSettings);
+
+
+
 
   const [settings, setSettings] = useState<SalesSettings>({
     preferred_invoice_terms: 'due_on_receipt',
@@ -167,7 +171,7 @@ export default function SalesSettingsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 pb-20">
+    <>
       <div className="max-w-4xl mx-auto px-6 py-10">
 
         {/* Main Content */}
@@ -675,31 +679,31 @@ export default function SalesSettingsPage() {
             </CardContent>
           </Card>
         </div>
-      </div>
+        </div>
 
-      {/* Done Button */}
-      <Button 
-        onClick={handleDone}
-        disabled={loading}
-        className="fixed bottom-6 right-6 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg shadow-lg z-40"
-      >
-        {loading ? 'Saving...' : 'Done'}
-      </Button>
+        {/* Done Button */}
+        <Button 
+          onClick={handleDone}
+          disabled={loading}
+          className="fixed bottom-6 right-6 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg shadow-lg z-40"
+        >
+          {loading ? 'Saving...' : 'Done'}
+        </Button>
 
-      {/* Success Toast */}
-      <AnimatePresence>
-        {showSaved && (
-          <motion.div
-            initial={{ y: 60, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            exit={{ y: 60, opacity: 0 }}
-            className="fixed bottom-8 left-1/2 -translate-x-1/2 bg-emerald-600 text-white px-10 py-4 rounded-2xl shadow-2xl flex items-center gap-3 z-50"
-          >
-            <CheckCircle className="h-6 w-6" />
-            <span className="font-medium text-base">Settings saved</span>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </div>
+        {/* Success Toast */}
+        <AnimatePresence>
+          {showSaved && (
+            <motion.div
+              initial={{ y: 60, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: 60, opacity: 0 }}
+              className="fixed bottom-8 left-1/2 -translate-x-1/2 bg-emerald-600 text-white px-10 py-4 rounded-2xl shadow-2xl flex items-center gap-3 z-50"
+            >
+              <CheckCircle className="h-6 w-6" />
+              <span className="font-medium text-base">Settings saved</span>
+            </motion.div>
+          )}
+        </AnimatePresence>
+    </>
   );
 }
