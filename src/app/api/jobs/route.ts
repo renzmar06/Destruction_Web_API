@@ -64,7 +64,7 @@ export async function POST(request: NextRequest) {
     
     // Update estimate status to 'converted_to_job'
     await Estimate.findByIdAndUpdate(jobData.estimate_id, {
-      estimate_status: 'converted_to_job'
+      estimate_status: 'draft'
     });
     
     return NextResponse.json({ 

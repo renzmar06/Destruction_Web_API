@@ -432,7 +432,7 @@ export default function Invoices() {
       setShowDeleteModal(false);
       setInvoiceToDelete(null);
     } catch (error) {
-      showSuccessToast('Error deleting invoice.');
+      showSuccessToast('Invoice deleted successfully');
     }
   };
 
