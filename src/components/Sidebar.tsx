@@ -28,12 +28,16 @@ import {
   Receipt,
   LogOut,
   CreditCard,
-  BarChart3
+  BarChart3,
+  MessageCircle,
+  Target,
+  ShoppingBag
 } from 'lucide-react';
 
 export default function Sidebar() {
   const [collapsed, setCollapsed] = useState(false);
   const [customerMenuOpen, setCustomerMenuOpen] = useState(false);
+  const [crmMenuOpen, setCrmMenuOpen] = useState(false);
   const pathname = usePathname();
   const dispatch = useDispatch<AppDispatch>();
   const { user } = useSelector((state: RootState) => state.auth);
@@ -63,6 +67,17 @@ export default function Sidebar() {
   const navItems = [
     { id: 'dashboard', label: 'Dashboard', icon: Home, href: '/dashboard' },
     { id: 'reports', label: 'Reports', icon: BarChart3, href: '/reports' },
+    { 
+      id: 'crm', 
+      label: 'CRM', 
+      icon: Users, 
+      isDropdown: true,
+      subItems: [
+        { id: 'inbox', label: 'Inbox', icon: MessageCircle, href: '/crm/inbox' },
+        { id: 'pipeline', label: 'Pipeline',icon: Target, href: '/crm/pipeline' },
+        { id: 'orders', label: 'Orders', icon: ShoppingBag, href: '/crm/orders' }
+      ]
+    },
     { id: 'requests', label: 'Service Requests', icon: ClipboardList, href: '/service-requests' },
     { id: 'products-services', label: 'Products Services', icon: Package, href: '/products-services' },
     { id: 'estimates', label: 'Estimates', icon: FileText, href: '/estimates' },
@@ -146,9 +161,52 @@ export default function Sidebar() {
             })
           ) : (
             /* Show admin navigation for non-customers */
-            navItems.map((item) => {
+            navItems.map((item: any) => {
               const Icon = item.icon;
               const active = isActive(item.href);
+              
+              if (item.isDropdown) {
+                const isAnySubItemActive = item.subItems?.some((sub: any) => isActive(sub.href));
+                
+                return (
+                  <li key={item.id}>
+                    <button
+                      onClick={() => setCrmMenuOpen(!crmMenuOpen)}
+                      className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all ${
+                        isAnySubItemActive
+                          ? 'bg-blue-600 text-white'
+                          : 'text-slate-300 hover:bg-slate-800 hover:text-white'
+                      } ${collapsed ? 'justify-center' : ''}`}
+                    >
+                      <Icon className="w-5 h-5 flex-shrink-0" />
+                      {!collapsed && (
+                        <>
+                          <span className="text-sm font-medium flex-1 text-left">{item.label}</span>
+                          <ChevronDown className={`w-4 h-4 transition-transform ${crmMenuOpen ? 'rotate-180' : ''}`} />
+                        </>
+                      )}
+                    </button>
+                    {crmMenuOpen && !collapsed && (
+                      <ul className="mt-1 ml-4 space-y-1">
+                        {item.subItems.map((subItem: any) => (
+                          <li key={subItem.id}>
+                            <Link
+                              href={subItem.href}
+                              className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm ${
+                                isActive(subItem.href)
+                                  ? 'bg-blue-600 text-white'
+                                  : 'text-slate-400 hover:bg-slate-800 hover:text-white'
+                              }`}
+                            >
+                              <subItem.icon className="w-4 h-4 flex-shrink-0" /> {subItem.label}
+                            </Link>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </li>
+                );
+              }
               
               return (
                 <li key={item.id}>
