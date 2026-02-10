@@ -78,12 +78,13 @@ export default function Sidebar() {
         { id: 'orders', label: 'Orders', icon: ShoppingBag, href: '/crm/orders' },
         { id: 'estimates', label: 'Estimates', icon: FileText, href: '/crm/estimates' },
         { id: 'invoices', label: 'Invoices', icon: DollarSign, href: '/crm/invoices' },
+        { id: 'tasks', label: 'Tasks', icon: CheckSquare, href: '/crm/tasks' },
         
       ]
     },
     { id: 'requests', label: 'Service Requests', icon: ClipboardList, href: '/service-requests' },
     { id: 'products-services', label: 'Products Services', icon: Package, href: '/products-services' },
-    // { id: 'estimates', label: 'Estimates', icon: FileText, href: '/estimates' },
+    { id: 'estimates', label: 'Estimates', icon: FileText, href: '/estimates' },
     { id: 'jobs', label: 'Jobs', icon: Calendar, href: '/jobs' },
     { id: 'affidavits', label: 'Affidavits', icon: FileCheck, href: '/affidavits' },
     { id: 'document-verification', label: 'Document Verification', icon: Shield, href: '/document-verification' },
@@ -91,7 +92,7 @@ export default function Sidebar() {
     { id: 'customer-task', label: 'Task', icon: FileText, href: '/customer-task' },
     { id: 'customers', label: 'Customers', icon: Users, href: '/customers' },
     { id: 'vendors', label: 'Vendors', icon: Truck, href: '/vendors' },
-    // { id: 'invoices', label: 'Invoices', icon: DollarSign, href: '/invoices' },
+    { id: 'invoices', label: 'Invoices', icon: DollarSign, href: '/invoices' },
     { id: 'receive-payments', label: 'Receive Payments', icon: CreditCard, href: '/receive-payments' },
     { id: 'vendor-payments', label: 'Vendor Payments', icon: CreditCard, href: '/vendor-payments' }
   ];

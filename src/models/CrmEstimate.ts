@@ -17,7 +17,8 @@ const crmEstimateSchema = new mongoose.Schema({
     enum: ['draft', 'sent', 'accepted', 'declined', 'expired'], 
     default: 'draft' 
   },
-  valid_until: { type: Date },
+  valid_until_from: { type: Date },
+  valid_until_to: { type: Date },
   notes: { type: String },
   terms: { type: String },
   created_date: { type: Date, default: Date.now }

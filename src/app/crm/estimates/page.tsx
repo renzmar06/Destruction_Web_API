@@ -7,6 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
+import { DateRangePicker } from "@/components/ui/date-range-picker";
+import { DateRange } from 'react-day-picker';
 import {
   Table,
   TableBody,
@@ -60,7 +62,9 @@ export default function Estimates() {
   const [newEstimate, setNewEstimate] = useState({
     customer_id: '',
     items: [{ description: '', quantity: 1, unit_price: 0, total: 0 }],
-    valid_until: '',
+    valid_until_from: '',
+    valid_until_to: '',
+    valid_until_range: undefined as DateRange | undefined,
     notes: '',
     terms: 'Valid for 30 days from issue date'
   });
@@ -110,7 +114,9 @@ export default function Estimates() {
         setNewEstimate({
           customer_id: '',
           items: [{ description: '', quantity: 1, unit_price: 0, total: 0 }],
-          valid_until: '',
+          valid_until_from: '',
+          valid_until_to: '',
+          valid_until_range: undefined,
           notes: '',
           terms: 'Valid for 30 days from issue date'
         });
@@ -167,19 +173,26 @@ export default function Estimates() {
   const handleCreate = () => {
     const total = calculateTotal();
     const estimateNumber = `EST-${Date.now()}`;
-    createEstimate({
+    const estimateData: any = {
       ...newEstimate,
       estimate_number: estimateNumber,
       subtotal: total,
       total: total,
-      status: 'draft'
-    });
+      status: 'draft',
+      valid_until_from: newEstimate.valid_until_range?.from?.toISOString() || '',
+      valid_until_to: newEstimate.valid_until_range?.to?.toISOString() || '',
+    };
+    delete estimateData.valid_until_range;
+    createEstimate(estimateData);
   };
 
   const handleEdit = (estimate: any) => {
     setEditingEstimate({
       ...estimate,
-      valid_until: estimate.valid_until ? new Date(estimate.valid_until).toISOString().split('T')[0] : ''
+      valid_until_range: estimate.valid_until_from && estimate.valid_until_to ? {
+        from: new Date(estimate.valid_until_from),
+        to: new Date(estimate.valid_until_to)
+      } : undefined
     });
     setIsEditOpen(true);
   };
@@ -199,11 +212,15 @@ export default function Estimates() {
 
   const handleUpdate = () => {
     const total = calculateEditTotal();
-    updateEstimate(editingEstimate._id, {
+    const updateData: any = {
       ...editingEstimate,
       subtotal: total,
-      total: total
-    });
+      total: total,
+      valid_until_from: editingEstimate.valid_until_range?.from?.toISOString() || '',
+      valid_until_to: editingEstimate.valid_until_range?.to?.toISOString() || '',
+    };
+    delete updateData.valid_until_range;
+    updateEstimate(editingEstimate._id, updateData);
     setIsEditOpen(false);
     setEditingEstimate(null);
   };
@@ -306,7 +323,10 @@ export default function Estimates() {
                       </Badge>
                     </TableCell>
                     <TableCell className="text-sm">
-                      {estimate.valid_until ? format(new Date(estimate.valid_until), 'MMM d, yyyy') : '-'}
+                      {estimate.valid_until_from && estimate.valid_until_to ? 
+                        `${format(new Date(estimate.valid_until_from), 'MMM d, yyyy')} - ${format(new Date(estimate.valid_until_to), 'MMM d, yyyy')}` : 
+                        '-'
+                      }
                     </TableCell>
                     <TableCell className="text-sm text-slate-500">
                       {format(new Date(estimate.created_date), 'MMM d, yyyy')}
@@ -365,11 +385,15 @@ export default function Estimates() {
             </div>
 
             <div>
-              <Label>Valid Until</Label>
-              <Input
-                type="date"
-                value={newEstimate.valid_until}
-                onChange={(e) => setNewEstimate({ ...newEstimate, valid_until: e.target.value })}
+              <Label>Valid Until Range</Label>
+              <DateRangePicker
+                value={newEstimate.valid_until_range}
+                onChange={(range) =>
+                  setNewEstimate({
+                    ...newEstimate,
+                    valid_until_range: range,
+                  })
+                }
               />
             </div>
 
@@ -476,11 +500,15 @@ export default function Estimates() {
               </div>
 
               <div>
-                <Label>Valid Until</Label>
-                <Input
-                  type="date"
-                  value={editingEstimate.valid_until}
-                  onChange={(e) => setEditingEstimate({ ...editingEstimate, valid_until: e.target.value })}
+                <Label>Valid Until Range</Label>
+                <DateRangePicker
+                  value={editingEstimate.valid_until_range}
+                  onChange={(range) =>
+                    setEditingEstimate({
+                      ...editingEstimate,
+                      valid_until_range: range,
+                    })
+                  }
                 />
               </div>
 
