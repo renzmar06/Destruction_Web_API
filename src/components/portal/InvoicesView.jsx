@@ -8,7 +8,6 @@ import { Receipt, Calendar, DollarSign, CreditCard, Download, Eye, Filter, X, Ch
 import { format, isAfter, parseISO } from "date-fns";
 import { motion, AnimatePresence } from "framer-motion";
 import StripePaymentModal from "./StripePaymentModal";
-import { useAppSelector } from '@/redux/hooks';
 
 const statusConfig = {
   draft: { label: 'Draft', className: 'bg-slate-100 text-slate-700' },
@@ -19,10 +18,10 @@ const statusConfig = {
   partially_paid: { label: 'Partially Paid', className: 'bg-amber-100 text-amber-700' }
 };
 
-export default function InvoicesView({ userId=null }) {
-  const { invoices, loading } = useAppSelector(state => state.invoices);
+export default function InvoicesView({ userId=null, invoices=[] }) {
+  const loading = false;
   
-  // Filter invoices for the specific customer by ID, email, or user_id
+  // Filter invoices for the specific customer by ID
   const customerInvoices = invoices.filter(invoice => {
     if(userId === null){
       return true;
@@ -45,17 +44,22 @@ export default function InvoicesView({ userId=null }) {
   const isLoading = loading;
 
   const getInvoiceStatus = (invoice) => {
-    if (invoice.invoice_status === 'paid') return 'paid';
-    if (invoice.invoice_status === 'partially_paid') return 'partially_paid';
+    // CrmInvoice uses 'payment_status' and 'status' fields
+    if (invoice.payment_status === 'paid') return 'paid';
+    if (invoice.payment_status === 'partial') return 'partially_paid';
     
-    const today = new Date();
-    const dueDate = parseISO(invoice.due_date);
-    
-    if (isAfter(today, dueDate) && invoice.balance_due > 0) {
-      return 'overdue';
+    // Check if overdue based on due_date
+    if (invoice.due_date) {
+      const today = new Date();
+      const dueDate = new Date(invoice.due_date);
+      
+      if (isAfter(today, dueDate) && invoice.payment_status !== 'paid') {
+        return 'overdue';
+      }
     }
     
-    return invoice.invoice_status;
+    // Return the status from CrmInvoice model
+    return invoice.status || 'draft';
   };
 
   // Mock line items and adjustments for demo
@@ -270,23 +274,17 @@ export default function InvoicesView({ userId=null }) {
                 <span>Subtotal</span>
                 <span>${selectedInvoice.subtotal?.toFixed(2)}</span>
               </div>
-              {selectedInvoice.tax_amount > 0 && (
-                <div className="flex justify-between text-slate-700">
-                  <span>Tax ({selectedInvoice.tax_rate}%)</span>
-                  <span>${selectedInvoice.tax_amount?.toFixed(2)}</span>
-                </div>
-              )}
               <div className="flex justify-between items-center border-t-2 border-slate-300 pt-3">
                 <span className="text-xl font-bold text-slate-900">Amount Due</span>
-                <span className="text-3xl font-bold text-slate-900">${selectedInvoice.total_amount?.toFixed(2)}</span>
+                <span className="text-3xl font-bold text-slate-900">${selectedInvoice.total?.toFixed(2)}</span>
               </div>
             </div>
 
             {/* Notes */}
-            {selectedInvoice.notes_to_customer && (
+            {selectedInvoice.notes && (
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                 <p className="text-sm font-medium text-blue-900 mb-2">Notes</p>
-                <p className="text-sm text-blue-800 whitespace-pre-wrap">{selectedInvoice.notes_to_customer}</p>
+                <p className="text-sm text-blue-800 whitespace-pre-wrap">{selectedInvoice.notes}</p>
               </div>
             )}
 
@@ -305,7 +303,7 @@ export default function InvoicesView({ userId=null }) {
                 )}
                 Download PDF
               </Button>
-              {(selectedInvoice.invoice_status === 'finalized' || selectedInvoice.invoice_status === 'sent' || getInvoiceStatus(selectedInvoice) === 'overdue') && selectedInvoice.balance_due > 0 && (
+              {(selectedInvoice.status === 'sent' || getInvoiceStatus(selectedInvoice) === 'overdue') && selectedInvoice.payment_status !== 'paid' && (
                 <Button 
                   onClick={() => setShowPaymentModal(true)} 
                   className="bg-green-600 hover:bg-green-700 gap-2"
@@ -351,7 +349,7 @@ export default function InvoicesView({ userId=null }) {
             <CardContent className="p-4">
               <div className="text-sm text-slate-600">Total Due</div>
               <div className="text-2xl font-bold text-slate-900">
-                ${customerInvoices.reduce((sum, inv) => sum + (inv.balance_due || 0), 0).toFixed(2)}
+                ${customerInvoices.filter(inv => inv.payment_status !== 'paid').reduce((sum, inv) => sum + (inv.total || 0), 0).toFixed(2)}
               </div>
             </CardContent>
           </Card>
@@ -359,7 +357,7 @@ export default function InvoicesView({ userId=null }) {
             <CardContent className="p-4">
               <div className="text-sm text-slate-600">Total Paid</div>
               <div className="text-2xl font-bold text-green-600">
-                ${customerInvoices.reduce((sum, inv) => sum + (inv.amount_paid || 0), 0).toFixed(2)}
+                ${customerInvoices.filter(inv => inv.payment_status === 'paid').reduce((sum, inv) => sum + (inv.total || 0), 0).toFixed(2)}
               </div>
             </CardContent>
           </Card>
@@ -558,15 +556,8 @@ export default function InvoicesView({ userId=null }) {
                         </div>
                         <div className="flex items-center gap-1">
                           <DollarSign className="w-4 h-4" />
-                          <span className="font-semibold text-slate-900">${invoice.total_amount?.toFixed(2)}</span>
+                          <span className="font-semibold text-slate-900">${invoice.total?.toFixed(2)}</span>
                         </div>
-                        {invoice.balance_due > 0 && invoice.balance_due !== invoice.total_amount && (
-                          <div className="flex items-center gap-1">
-                            <span className="text-amber-600 font-medium">
-                              Balance: ${invoice.balance_due?.toFixed(2)}
-                            </span>
-                          </div>
-                        )}
                       </div>
                     </div>
                     

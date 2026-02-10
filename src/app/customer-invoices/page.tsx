@@ -4,28 +4,51 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { User, CheckCircle, AlertCircle } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import InvoicesView from "@/components/portal/InvoicesView";
-import { useAppDispatch, useAppSelector } from '@/redux/hooks';
-import { fetchInvoices } from '@/redux/slices/invoicesSlice';
-import { fetchCustomers } from '@/redux/slices/customersSlice';
+import { useAppSelector } from '@/redux/hooks';
 import { loadUserFromStorage } from '@/redux/slices/authSlice';
-
-
+import { useDispatch } from 'react-redux';
 
 export default function CustomerInvoices() {
-  const dispatch = useAppDispatch();
+  const dispatch = useDispatch();
   const { user } = useAppSelector(state => state.auth);
-  const { customers, loading: customersLoading } = useAppSelector(state => state.customers);
-  const { invoices, loading: invoicesLoading } = useAppSelector(state => state.invoices);
-  
+  const [invoices, setInvoices] = useState([]);
+  const [customers, setCustomers] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [customer, setCustomer] = useState<any>(null);
   const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(null);
   const [paymentStatus, setPaymentStatus] = useState<string | null>(null);
 
   useEffect(() => {
     dispatch(loadUserFromStorage());
-    dispatch(fetchCustomers());
-    dispatch(fetchInvoices());
+    fetchInvoices();
+    fetchCustomers();
   }, [dispatch]);
+
+  const fetchInvoices = async () => {
+    try {
+      const res = await fetch('/api/crm-invoices');
+      const result = await res.json();
+      if (result.success) {
+        setInvoices(result.data);
+      }
+    } catch (error) {
+      console.error('Error fetching invoices:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchCustomers = async () => {
+    try {
+      const res = await fetch('/api/customers');
+      const result = await res.json();
+      if (result.success) {
+        setCustomers(result.data);
+      }
+    } catch (error) {
+      console.error('Error fetching customers:', error);
+    }
+  };
 
   // Simulate URL payment status (for testing)
   useEffect(() => {
@@ -45,21 +68,20 @@ export default function CustomerInvoices() {
     if (user && customers.length > 0) {
       if ((user as any).role === 'admin') {
         if (selectedCustomerId) {
-          const selected = customers.find(c => c._id === selectedCustomerId || c.id === selectedCustomerId);
+          const selected = customers.find((c: any) => c._id === selectedCustomerId);
           setCustomer(selected || null);
         } else if (customers.length > 0) {
-          setSelectedCustomerId((customers[0]._id || customers[0].id) || null);
+          setSelectedCustomerId((customers[0] as any)._id || null);
           setCustomer(customers[0]);
         }
       } else {
-        // Regular customer/user — match by email
-        const matchedCustomer = customers.find(c => c.email === user.email);
+        const matchedCustomer = customers.find((c: any) => c._id === ((user as any)._id || user.id) || c.email === user.email);
         setCustomer(matchedCustomer || null);
       }
     }
   }, [user, customers, selectedCustomerId]);
 
-  if (!user || customersLoading || invoicesLoading) {
+  if (!user || loading) {
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center">
         <div className="text-center">
@@ -131,9 +153,9 @@ export default function CustomerInvoices() {
                 <SelectValue placeholder="Select customer to preview" />
               </SelectTrigger>
               <SelectContent>
-                {customers.map(c => (
-                  <SelectItem key={c._id || c.id} value={(c._id || c.id) || ''}>
-                    {c.legal_company_name || c.display_name}
+                {customers.map((c: any) => (
+                  <SelectItem key={c._id} value={c._id || ''}>
+                    {c.name || c.email}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -149,7 +171,8 @@ export default function CustomerInvoices() {
 
         {/* Content */}
         <InvoicesView
-        userId={user.id || customer.id} 
+          userId={(user as any)._id || user.id}
+          invoices={invoices.filter((inv: any) => inv.customer_id === ((user as any)._id || user.id))}
         />
       </div>
     </div>
