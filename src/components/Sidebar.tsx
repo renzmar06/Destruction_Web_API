@@ -31,7 +31,8 @@ import {
   BarChart3,
   MessageCircle,
   Target,
-  ShoppingBag
+  ShoppingBag,
+  Zap
 } from 'lucide-react';
 
 export default function Sidebar() {
@@ -79,7 +80,7 @@ export default function Sidebar() {
         { id: 'estimates', label: 'Estimates', icon: FileText, href: '/crm/estimates' },
         { id: 'invoices', label: 'Invoices', icon: DollarSign, href: '/crm/invoices' },
         { id: 'tasks', label: 'Tasks', icon: CheckSquare, href: '/crm/tasks' },
-        
+        { id: 'automation', label: 'Automation', icon: Zap, href: '/crm/automation' },
       ]
     },
     { id: 'requests', label: 'Service Requests', icon: ClipboardList, href: '/service-requests' },
