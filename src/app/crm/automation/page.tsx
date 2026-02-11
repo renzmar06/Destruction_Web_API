@@ -317,8 +317,8 @@ export default function Automation() {
               rule={rule}
               onToggle={handleToggle}
               onEdit={handleEdit}
-              onDelete={(rule) => deleteRule(rule._id)}
-              onRun={(rule) => handleRun(rule)}
+              onDelete={(rule: any) => deleteRule(rule._id)}
+              onRun={(rule: any) => handleRun(rule)}
             />
           ))}
         </div>

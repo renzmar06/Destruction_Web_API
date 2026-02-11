@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/mongodb';
 import { getUserFromRequest } from '@/lib/auth';
+import Message from '@/models/Message';
 import ServiceRequest from '@/models/ServiceRequest';
 import User from '@/models/User';
 
@@ -20,13 +21,11 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ success: false, message: 'Conversation ID required' }, { status: 400 });
     }
 
-    const serviceRequest = await ServiceRequest.findById(conversationId);
-    
-    if (!serviceRequest) {
-      return NextResponse.json({ success: false, message: 'Conversation not found' }, { status: 404 });
-    }
+    const messages = await Message.find({ conversation_id: conversationId })
+      .populate('sender_id', 'name email')
+      .sort({ createdAt: 1 });
 
-    return NextResponse.json({ success: true, data: serviceRequest.messages || [] });
+    return NextResponse.json({ success: true, data: messages });
   } catch (error) {
     return NextResponse.json({ success: false, message: 'Failed to fetch messages' }, { status: 500 });
   }
@@ -54,15 +53,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, message: 'Conversation not found' }, { status: 404 });
     }
 
-    const newMessage = {
-      message: content,
-      sentBy: user?.name || user?.email || 'Agent',
-      timestamp: new Date()
-    };
+    const newMessage = await Message.create({
+      conversation_id,
+      sender_id: userId,
+      sender_type: user?.role === 'admin' ? 'agent' : 'customer',
+      content
+    });
 
-    serviceRequest.messages = serviceRequest.messages || [];
-    serviceRequest.messages.push(newMessage);
-    await serviceRequest.save();
+    await newMessage.populate('sender_id', 'name email');
 
     return NextResponse.json({ success: true, data: newMessage });
   } catch (error) {

@@ -94,13 +94,13 @@ export default function Inbox() {
       const data = await res.json();
       
       if (data.success) {
-        const formatted = data.data.map((msg: any, idx: number) => ({
-          id: idx + 1,
-          conversation_id: conversationId,
-          sender_type: msg.sentBy === currentUser.name ? 'agent' : 'customer',
-          sender_id: msg.sentBy,
-          content: msg.message,
-          created_date: msg.timestamp
+        const formatted = data.data.map((msg: any) => ({
+          id: msg._id,
+          conversation_id: msg.conversation_id,
+          sender_type: msg.sender_type,
+          sender_id: msg.sender_id?.email || msg.sender_id,
+          content: msg.content,
+          created_date: msg.createdAt
         }));
         setMessages(formatted);
       }
@@ -147,8 +147,22 @@ export default function Inbox() {
     fetchMessages(selectedConversation._id);
   };
 
-  const handleUpdateConversation = (data: any) => {
+  const handleUpdateConversation = async (data: any) => {
     if (!selectedConversation) return;
+    
+    if (data.status || data.priority || data.tags) {
+      const updatePayload: any = {};
+      if (data.status) updatePayload.status = data.status;
+      if (data.priority) updatePayload.priority = data.priority;
+      if (data.tags) updatePayload.tags = data.tags;
+      
+      await fetch(`/api/conversations/${selectedConversation._id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updatePayload)
+      });
+    }
+    
     const updated = { ...selectedConversation, ...data };
     setSelectedConversation(updated);
     setConversations(conversations.map(c => 

@@ -147,7 +147,7 @@ export default function ConversationDetails({
           </Select>
         </div>
 
-        <div>
+        {/* <div>
           <Label className="text-xs text-slate-500 mb-1.5 block">Assigned To</Label>
           <Select value={conversation.assigned_to || 'unassigned'} onValueChange={handleAssign}>
             <SelectTrigger className="w-full">
@@ -169,7 +169,7 @@ export default function ConversationDetails({
               ))}
             </SelectContent>
           </Select>
-        </div>
+        </div> */}
 
         <div>
           <Label className="text-xs text-slate-500 mb-1.5 block">Priority</Label>

@@ -55,8 +55,14 @@ export default function RuleCard({
   onEdit, 
   onDelete,
   onRun 
+}: {
+  rule: any;
+  onToggle: (rule: any) => void;
+  onEdit: (rule: any) => void;
+  onDelete: (rule: any) => void;
+  onRun: (rule: any) => void;
 }) {
-  const triggerStyle = triggerIcons[rule.trigger_type] || triggerIcons.new_message;
+  const triggerStyle = (triggerIcons as any)[rule.trigger_type] || triggerIcons.new_message;
   const TriggerIcon = triggerStyle.icon;
 
   return (
@@ -109,7 +115,7 @@ export default function RuleCard({
 
       <div className="flex items-center gap-2 mb-4">
         <Badge variant="outline" className="text-xs">
-          Trigger: {triggerLabels[rule.trigger_type] || rule.trigger_type}
+          Trigger: {(triggerLabels as any)[rule.trigger_type] || rule.trigger_type}
         </Badge>
         {rule.conditions?.length > 0 && (
           <Badge variant="outline" className="text-xs">
@@ -121,13 +127,13 @@ export default function RuleCard({
       <div className="space-y-2">
         <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Actions</p>
         <div className="flex flex-wrap gap-2">
-          {rule.actions?.map((action, index) => (
+          {rule.actions?.map((action: any, index: number) => (
             <Badge 
               key={index}
               className="bg-slate-100 text-slate-700"
             >
               <Zap className="w-3 h-3 mr-1" />
-              {actionLabels[action.type] || action.type}
+              {(actionLabels as any)[action.type] || action.type}
             </Badge>
           ))}
         </div>
