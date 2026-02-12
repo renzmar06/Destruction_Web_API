@@ -3,6 +3,7 @@ import mongoose from 'mongoose';
 const crmInvoiceSchema = new mongoose.Schema({
   user_id: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
   customer_id: { type: String, required: true },
+  crm_estimate_id: { type: mongoose.Schema.Types.ObjectId, ref: 'CrmEstimate' },
   invoice_number: { type: String, required: true, unique: true },
   items: [{
     description: { type: String, required: true },

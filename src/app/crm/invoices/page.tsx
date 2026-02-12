@@ -53,10 +53,13 @@ export default function Invoices() {
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [invoices, setInvoices] = useState([]);
   const [customers, setCustomers] = useState([]);
+  const [crmEstimates, setCrmEstimates] = useState([]);
+  const [customerEstimates, setCustomerEstimates] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [editingInvoice, setEditingInvoice] = useState<any>(null);
   const [newInvoice, setNewInvoice] = useState({
     customer_id: '',
+    crm_estimate_id: '',
     items: [{ description: '', quantity: 1, unit_price: 0, total: 0 }],
     due_date: '',
     issue_date: new Date().toISOString().split('T')[0],
@@ -67,6 +70,7 @@ export default function Invoices() {
   useEffect(() => {
     fetchInvoices();
     fetchCustomers();
+    fetchCrmEstimates();
   }, []);
 
   const fetchInvoices = async () => {
@@ -95,6 +99,46 @@ export default function Invoices() {
     }
   };
 
+  const fetchCrmEstimates = async () => {
+    try {
+      const res = await fetch('/api/crm-estimates');
+      const result = await res.json();
+      if (result.success) {
+        setCrmEstimates(result.data);
+      }
+    } catch (error) {
+      console.error('Error fetching CRM estimates:', error);
+    }
+  };
+
+  const handleCustomerChange = (customerId: string) => {
+    setNewInvoice({ 
+      ...newInvoice, 
+      customer_id: customerId,
+      crm_estimate_id: '' 
+    });
+    
+    // Filter estimates for selected customer
+    const filtered = crmEstimates.filter((est: any) => est.customer_id === customerId);
+    setCustomerEstimates(filtered);
+  };
+
+  const handleEstimateChange = (estimateId: string) => {
+    setNewInvoice({ ...newInvoice, crm_estimate_id: estimateId });
+    
+    // Optionally pre-fill items from estimate
+    if (estimateId) {
+      const selectedEstimate: any = crmEstimates.find((est: any) => est._id === estimateId);
+      if (selectedEstimate && selectedEstimate.items && selectedEstimate.items.length > 0) {
+        setNewInvoice({ 
+          ...newInvoice, 
+          crm_estimate_id: estimateId,
+          items: selectedEstimate.items.map((item: any) => ({ ...item }))
+        });
+      }
+    }
+  };
+
   const createInvoice = async (data: any) => {
     try {
       const res = await fetch('/api/crm-invoices', {
@@ -108,12 +152,14 @@ export default function Invoices() {
         setIsCreateOpen(false);
         setNewInvoice({
           customer_id: '',
+          crm_estimate_id: '',
           items: [{ description: '', quantity: 1, unit_price: 0, total: 0 }],
           due_date: '',
           issue_date: new Date().toISOString().split('T')[0],
           notes: '',
           payment_terms: 'Net 30'
         });
+        setCustomerEstimates([]);
       }
     } catch (error) {
       console.error('Error creating invoice:', error);
@@ -364,7 +410,7 @@ export default function Invoices() {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label>Customer *</Label>
-                <Select value={newInvoice.customer_id} onValueChange={(v) => setNewInvoice({ ...newInvoice, customer_id: v })}>
+                <Select value={newInvoice.customer_id} onValueChange={handleCustomerChange}>
                   <SelectTrigger>
                     <SelectValue placeholder="Select customer" />
                   </SelectTrigger>
@@ -384,6 +430,24 @@ export default function Invoices() {
                 />
               </div>
             </div>
+
+            {newInvoice.customer_id && (
+              <div>
+                <Label>Select CRM Estimate (Optional)</Label>
+                <Select value={newInvoice.crm_estimate_id || undefined} onValueChange={handleEstimateChange}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select estimate (optional)" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {customerEstimates.map((est: any) => (
+                      <SelectItem key={est._id} value={est._id}>
+                        {est.estimate_number} - ${est.total?.toLocaleString()} ({est.status})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
 
             <div>
               <div className="flex items-center justify-between mb-2">
