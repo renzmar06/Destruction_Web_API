@@ -29,12 +29,9 @@ export interface IServiceRequest extends Document {
   scheduleFrequency?: string;
   problemDescription?: string;
   attachments?: string[];
-  messages?: Array<{
-    message: string;
-    sentBy: string;
-    timestamp: Date;
-  }>;
   status: string;
+  priority?: string;
+  tags?: string[];
   createdAt: Date;
   updatedAt: Date;
   adminNotes?: string;
@@ -69,12 +66,9 @@ const ServiceRequestSchema: Schema = new Schema({
   scheduleFrequency: { type: String },
   problemDescription: { type: String },
   attachments: [{ type: String }],
-  messages: [{
-    message: { type: String, required: true },
-    sentBy: { type: String, required: true },
-    timestamp: { type: Date, default: Date.now }
-  }],
   status: { type: String, required: true, default: 'pending' },
+  priority: { type: String },
+  tags: [{ type: String }],
   adminNotes: { type: String }
 }, {
   timestamps: true

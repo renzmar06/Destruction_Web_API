@@ -23,8 +23,24 @@ export default function ViewDetail({ selectedRequest, onBack, onNewRequest, onEd
   const { loading: sendingMessage, error } = useSelector((state: RootState) => state.messages);
   
   const [attachments, setAttachments] = useState(selectedRequest.attachments || []);
-  const [messages, setMessages] = useState(selectedRequest.messages || []);
+  const [messages, setMessages] = useState<any[]>([]);
   const [newMessage, setNewMessage] = useState('');
+
+  useEffect(() => {
+    fetchMessages();
+  }, [selectedRequest]);
+
+  const fetchMessages = async () => {
+    try {
+      const res = await fetch(`/api/customer-requests/${selectedRequest._id || selectedRequest.id}/messages`);
+      const data = await res.json();
+      if (data.success) {
+        setMessages(data.data);
+      }
+    } catch (error) {
+      console.error('Failed to fetch messages:', error);
+    }
+  };
 
   useEffect(() => {
     if (error) {
@@ -42,7 +58,7 @@ export default function ViewDetail({ selectedRequest, onBack, onNewRequest, onEd
         message: newMessage
       })).unwrap();
       
-      setMessages((prev: any[]) => [...prev, result]);
+      await fetchMessages();
       setNewMessage('');
       toast.success('Message sent successfully');
     } catch (error) {
@@ -167,16 +183,16 @@ export default function ViewDetail({ selectedRequest, onBack, onNewRequest, onEd
                   <p className="text-center text-slate-500 py-8">No messages yet.</p>
                 ) : (
                   messages.map((msg: any, index: number) => (
-                    <div key={index} className={`rounded-lg p-3 max-w-xs ml-auto ${
-                      msg.sentBy === 'You' ? 'bg-blue-300' : 'bg-blue-500'
+                    <div key={index} className={`rounded-lg p-3 max-w-xs ${
+                      msg.sender_type === 'customer' ? 'bg-blue-500' : 'bg-blue-300 ml-auto'
                     }`}>
                       <div className="flex justify-between items-start mb-2">
-                        <span className="font-medium text-white">{msg.sentBy}</span>
+                        <span className="font-medium text-white">{msg.sender_id?.name || msg.sender_id?.email || 'User'}</span>
                         <span className="text-xs text-white">
-                          {new Date(msg.timestamp).toLocaleString()}
+                          {new Date(msg.createdAt).toLocaleString()}
                         </span>
                       </div>
-                      <p className="text-white">{msg.message}</p>
+                      <p className="text-white">{msg.content}</p>
                     </div>
                   ))
                 )}

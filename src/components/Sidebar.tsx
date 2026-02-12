@@ -31,7 +31,8 @@ import {
   BarChart3,
   MessageCircle,
   Target,
-  ShoppingBag
+  ShoppingBag,
+  Zap
 } from 'lucide-react';
 
 export default function Sidebar() {
@@ -74,8 +75,13 @@ export default function Sidebar() {
       isDropdown: true,
       subItems: [
         { id: 'inbox', label: 'Inbox', icon: MessageCircle, href: '/crm/inbox' },
+        { id: 'customers', label: 'Customers', icon: Users, href: '/customers' },
         { id: 'pipeline', label: 'Pipeline',icon: Target, href: '/crm/pipeline' },
-        { id: 'orders', label: 'Orders', icon: ShoppingBag, href: '/crm/orders' }
+        { id: 'orders', label: 'Orders', icon: ShoppingBag, href: '/crm/orders' },
+        { id: 'estimates', label: 'Estimates', icon: FileText, href: '/crm/estimates' },
+        { id: 'invoices', label: 'Invoices', icon: DollarSign, href: '/crm/invoices' },
+        { id: 'tasks', label: 'Tasks', icon: CheckSquare, href: '/crm/tasks' },
+        { id: 'automation', label: 'Automation', icon: Zap, href: '/crm/automation' },
       ]
     },
     { id: 'requests', label: 'Service Requests', icon: ClipboardList, href: '/service-requests' },
@@ -86,7 +92,7 @@ export default function Sidebar() {
     { id: 'document-verification', label: 'Document Verification', icon: Shield, href: '/document-verification' },
     { id: 'expenses', label: 'Expenses', icon: Receipt, href: '/expenses' },
     { id: 'customer-task', label: 'Task', icon: FileText, href: '/customer-task' },
-    { id: 'customers', label: 'Customers', icon: Users, href: '/customers' },
+    
     { id: 'vendors', label: 'Vendors', icon: Truck, href: '/vendors' },
     { id: 'invoices', label: 'Invoices', icon: DollarSign, href: '/invoices' },
     { id: 'receive-payments', label: 'Receive Payments', icon: CreditCard, href: '/receive-payments' },

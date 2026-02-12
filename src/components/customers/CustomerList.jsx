@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Eye, Archive, Search, ChevronDown, FileText, Mail, DollarSign } from "lucide-react";
+import { Eye, Archive, Search, ChevronDown,ShoppingBag, FileText, Mail, DollarSign } from "lucide-react";
 import { motion } from "framer-motion";
 import Pagination from "../common/Pagination";
 import AdvancedFilters from "../common/AdvancedFilters";
@@ -221,7 +221,9 @@ export default function CustomerList({
               </TableHead>
               <TableHead className="font-semibold text-slate-700">NAME ↕</TableHead>
               <TableHead className="font-semibold text-slate-700">COMPANY NAME ↕</TableHead>
-              <TableHead className="font-semibold text-slate-700">PHONE</TableHead>
+              <TableHead className="font-semibold text-slate-700">Contact</TableHead>
+              <TableHead className="font-semibold text-slate-700 text-center">TOTAL ORDERS</TableHead>
+              <TableHead className="font-semibold text-slate-700 text-right">TOTAL SPENT</TableHead>
               <TableHead className="font-semibold text-slate-700 text-right">OPEN BALANCE ↕</TableHead>
               <TableHead className="font-semibold text-slate-700 text-right">ACTION</TableHead>
             </TableRow>
@@ -230,14 +232,14 @@ export default function CustomerList({
             {isLoading ? (
               Array(5).fill(0).map((_, i) => (
                 <TableRow key={i}>
-                  <TableCell colSpan={6}>
+                  <TableCell colSpan={8}>
                     <div className="h-4 bg-slate-100 rounded animate-pulse" />
                   </TableCell>
                 </TableRow>
               ))
             ) : paginatedCustomers.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center py-12 text-slate-500">
+                <TableCell colSpan={8} className="text-center py-12 text-slate-500">
                   {searchTerm ? 'No customers found' : 'No customers yet. Add your first customer to get started.'}
                 </TableCell>
               </TableRow>
@@ -271,7 +273,18 @@ export default function CustomerList({
                       {customer.legal_company_name || customer.display_name || '—'}
                     </TableCell>
                     <TableCell className="text-slate-600">
+                      {customer.email || '—'}<br />
                       {customer.phone || '—'}
+                    </TableCell>
+                    <TableCell className="text-center font-medium text-slate-900">
+                      <div className="flex items-center gap-1.5">
+                      <ShoppingBag className="w-4 h-4 text-slate-400" />
+                      <span>{customer.total_orders || 0}</span>
+                      </div>
+                      
+                    </TableCell>
+                    <TableCell className="text-right font-semibold text-slate-900">
+                      ${(customer.total_spent || 0).toFixed(2)}
                     </TableCell>
                     <TableCell className="text-right font-semibold text-slate-900">
                       ${openBalance.toFixed(2)}

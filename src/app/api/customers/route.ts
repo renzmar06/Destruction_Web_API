@@ -3,6 +3,9 @@ import { connectDB } from '@/lib/mongodb';
 import User from '@/models/User';
 import bcrypt from 'bcrypt';
 import { getUserFromRequest } from '@/lib/auth';
+import Payment from '@/models/Payment';
+import Order from '@/models/Order';
+import mongoose from 'mongoose';
 
 export async function GET(request: NextRequest) {
   try {
@@ -29,10 +32,46 @@ export async function GET(request: NextRequest) {
       customers = await User.find({ _id: userId, role: 'customer' }).sort({ createdAt: -1 });
     }
 
+    // Enrich customers with total orders and total spent
+    const enrichedCustomers = await Promise.all(
+      customers.map(async (customer) => {
+        const customerObj = customer.toObject();
+        
+        // Count total orders from orders table
+        const totalOrders = await Order.countDocuments({ customer_id: customer._id });
+        
+        // Calculate total spent from payments matching user_id
+        const payments = await Payment.aggregate([
+          { 
+            $match: { 
+              user_id: new mongoose.Types.ObjectId(customer._id.toString())
+            } 
+          },
+          { 
+            $group: { 
+              _id: null, 
+              totalAmount: { $sum: { $ifNull: ['$amount', 0] } },
+              totalPaymentAmount: { $sum: { $ifNull: ['$payment_amount', 0] } }
+            } 
+          }
+        ]);
+        
+        const totalSpent = payments.length > 0 
+          ? (payments[0].totalAmount || 0) + (payments[0].totalPaymentAmount || 0)
+          : 0;
+        
+        return {
+          ...customerObj,
+          total_orders: totalOrders,
+          total_spent: totalSpent
+        };
+      })
+    );
+
     return NextResponse.json({ 
       success: true, 
       message: 'Customers fetched successfully',
-      data: customers 
+      data: enrichedCustomers 
     });
   } catch (error) {
     console.error('Error fetching customers:', error);

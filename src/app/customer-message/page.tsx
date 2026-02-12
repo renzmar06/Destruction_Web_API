@@ -50,26 +50,38 @@ const CustomerMessagesPage: FC = () => {
   const [selectedRequest, setSelectedRequest] = useState<ServiceRequest | null>(null);
   const [newMessage, setNewMessage] = useState("");
   const [messages, setMessages] = useState<any[]>([]);
+  const [messageCounts, setMessageCounts] = useState<Record<string, number>>({});
   
-  // Get messages for selected request
-  const getMessagesForRequest = (request: ServiceRequest) => {
-    return request.messages || [
-      {
-        sentBy: "Admin",
-        message: "Your request has been received and is being processed.",
-        timestamp: new Date(request.createdAt || Date.now()).toISOString(),
-      },
-      {
-        sentBy: "You",
-        message: "Thank you for the update. Looking forward to hearing back.",
-        timestamp: new Date().toISOString(),
-      },
-    ];
-  };
-
   useEffect(() => {
     dispatch(fetchServiceRequests());
   }, [dispatch]);
+
+  useEffect(() => {
+    if (requests.length > 0) {
+      fetchAllMessageCounts();
+    }
+  }, [requests]);
+
+  const fetchAllMessageCounts = async () => {
+    const counts: Record<string, number> = {};
+    await Promise.all(
+      requests.map(async (req: ServiceRequest) => {
+        const requestId = req._id || req.id;
+        if (requestId) {
+          try {
+            const res = await fetch(`/api/messages/count?conversation_id=${requestId}`);
+            const data = await res.json();
+            if (data.success) {
+              counts[requestId] = data.data.count;
+            }
+          } catch (error) {
+            console.error('Failed to fetch message count:', error);
+          }
+        }
+      })
+    );
+    setMessageCounts(counts);
+  };
 
   useEffect(() => {
     if (error) {
@@ -80,9 +92,23 @@ const CustomerMessagesPage: FC = () => {
 
   useEffect(() => {
     if (selectedRequest) {
-      setMessages(selectedRequest.messages || []);
+      fetchMessages();
     }
   }, [selectedRequest]);
+
+  const fetchMessages = async () => {
+    if (!selectedRequest) return;
+    try {
+      const requestId = selectedRequest._id || selectedRequest.id;
+      const res = await fetch(`/api/customer-requests/${requestId}/messages`);
+      const data = await res.json();
+      if (data.success) {
+        setMessages(data.data);
+      }
+    } catch (error) {
+      console.error('Failed to fetch messages:', error);
+    }
+  };
 
   const handleSendMessage = async () => {
     if (!newMessage.trim() || !selectedRequest) return;
@@ -99,7 +125,7 @@ const CustomerMessagesPage: FC = () => {
         message: newMessage
       })).unwrap();
       
-      setMessages(prev => [...prev, result]);
+      await fetchMessages();
       setNewMessage('');
       toast.success('Message sent successfully');
     } catch (error) {
@@ -190,19 +216,19 @@ const CustomerMessagesPage: FC = () => {
                     messages.map((msg: any, index: number) => (
                       <div
                         key={index}
-                        className={`rounded-lg p-3 max-w-xs ml-auto ${
-                          msg.sentBy === "You" ? "bg-blue-300" : "bg-blue-500"
+                        className={`rounded-lg p-3 max-w-xs ${
+                          msg.sender_type === "customer" ? "bg-blue-500" : "bg-blue-300 ml-auto"
                         }`}
                       >
                         <div className="flex justify-between items-start mb-2">
                           <span className="font-medium text-white">
-                            {msg.sentBy}
+                            {msg.sender_id?.name || msg.sender_id?.email || 'User'}
                           </span>
                           <span className="text-xs text-white">
-                            {new Date(msg.timestamp).toLocaleString()}
+                            {new Date(msg.createdAt).toLocaleString()}
                           </span>
                         </div>
-                        <p className="text-white">{msg.message}</p>
+                        <p className="text-white">{msg.content}</p>
                       </div>
                     ))
                   )}
@@ -263,7 +289,7 @@ const CustomerMessagesPage: FC = () => {
                         )}
                       </div>
                       <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600">
-                        {req.messages?.length || 0} messages
+                        {messageCounts[req._id || req.id || ''] || 0} messages
                       </span>
                     </div>
                     <h3 className="mb-3 text-sm font-semibold ">

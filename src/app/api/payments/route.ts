@@ -50,13 +50,21 @@ export async function POST(request: NextRequest) {
     const { userId } = getUserFromRequest(request);
     const body = await request.json();
     
+    if (!userId) {
+      return NextResponse.json({ 
+        success: false, 
+        message: 'User authentication required',
+        data: null 
+      }, { status: 401 });
+    }
+    
     // Generate unique payment number
     const paymentCount = await Payment.countDocuments();
     const paymentNumber = `PAY-${String(paymentCount + 1).padStart(4, '0')}`;
     
     // Process payment allocations and update invoices
     const allocations = [];
-    for (const allocation of body.allocations) {
+    for (const allocation of body.allocations || []) {
       const invoice = await Invoice.findById(allocation.invoice_id);
       if (!invoice) continue;
       
@@ -80,11 +88,17 @@ export async function POST(request: NextRequest) {
     }
     
     const payment = await Payment.create({
-      ...body,
+      user_id: body.customer_id,
+      customer_id: body.customer_id,
+      customer_name: body.customer_name,
       payment_number: paymentNumber,
-      user_id: body.user_id || userId,
+      payment_date: new Date(body.payment_date),
+      payment_amount: body.payment_amount,
+      payment_method: body.payment_method,
+      reference_number: body.reference_number || '',
+      notes: body.notes || '',
       allocations,
-      payment_date: new Date(body.payment_date)
+      status: 'succeeded'
     });
     
     return NextResponse.json({ 
@@ -92,11 +106,12 @@ export async function POST(request: NextRequest) {
       message: 'Payment recorded successfully',
       data: payment 
     }, { status: 201 });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error recording payment:', error);
+    console.error('Error details:', error.message);
     return NextResponse.json({ 
       success: false, 
-      message: 'Failed to record payment',
+      message: `Failed to record payment: ${error.message}`,
       data: null 
     }, { status: 500 });
   }

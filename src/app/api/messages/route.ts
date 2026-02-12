@@ -1,14 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-import ServiceRequest from '@/models/ServiceRequest';
-import Message from '@/models/Message';
-import User from '@/models/User';
 import { connectDB } from '@/lib/mongodb';
 import { getUserFromRequest } from '@/lib/auth';
+import Message from '@/models/Message';
+import ServiceRequest from '@/models/ServiceRequest';
+import User from '@/models/User';
 
-export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function GET(request: NextRequest) {
   try {
     await connectDB();
     const { userId } = getUserFromRequest(request);
@@ -17,8 +14,14 @@ export async function GET(
       return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
     }
 
-    const { id } = await params;
-    const messages = await Message.find({ conversation_id: id })
+    const { searchParams } = new URL(request.url);
+    const conversationId = searchParams.get('conversation_id');
+
+    if (!conversationId) {
+      return NextResponse.json({ success: false, message: 'Conversation ID required' }, { status: 400 });
+    }
+
+    const messages = await Message.find({ conversation_id: conversationId })
       .populate('sender_id', 'name email')
       .sort({ createdAt: 1 });
 
@@ -28,10 +31,7 @@ export async function GET(
   }
 }
 
-export async function POST(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function POST(request: NextRequest) {
   try {
     await connectDB();
     const { userId } = getUserFromRequest(request);
@@ -40,34 +40,29 @@ export async function POST(
       return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
     }
 
-    const { id } = await params;
-    const { message } = await request.json();
-    
-    if (!message?.trim()) {
-      return NextResponse.json({ success: false, message: 'Message is required' }, { status: 400 });
+    const { conversation_id, content } = await request.json();
+
+    if (!conversation_id || !content) {
+      return NextResponse.json({ success: false, message: 'Missing required fields' }, { status: 400 });
     }
 
     const user = await User.findById(userId);
-    const serviceRequest = await ServiceRequest.findById(id);
+    const serviceRequest = await ServiceRequest.findById(conversation_id);
     
     if (!serviceRequest) {
-      return NextResponse.json({ success: false, message: 'Service request not found' }, { status: 404 });
-    }
-
-    if (user?.role !== 'admin' && serviceRequest.user_id.toString() !== userId) {
-      return NextResponse.json({ success: false, message: 'Access denied' }, { status: 403 });
+      return NextResponse.json({ success: false, message: 'Conversation not found' }, { status: 404 });
     }
 
     const newMessage = await Message.create({
-      conversation_id: id,
+      conversation_id,
       sender_id: userId,
       sender_type: user?.role === 'admin' ? 'agent' : 'customer',
-      content: message.trim()
+      content
     });
 
     await newMessage.populate('sender_id', 'name email');
 
-    return NextResponse.json({ success: true, message: 'Message sent successfully', data: newMessage });
+    return NextResponse.json({ success: true, data: newMessage });
   } catch (error) {
     return NextResponse.json({ success: false, message: 'Failed to send message' }, { status: 500 });
   }
